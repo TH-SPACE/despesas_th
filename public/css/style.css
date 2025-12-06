@@ -156,6 +156,7 @@ body {
     display: inline-block;
     width: 50px;
     height: 24px;
+    margin-bottom: 0.5rem;
 }
 
 .toggle-switch input {
@@ -374,18 +375,19 @@ input:checked + .toggle-slider:before {
 .despesas-lista {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem; /* Aumentei o espaçamento entre os cards */
+    gap: 0; /* Removi o gap e estou usando margin nos cards */
 }
 
 .despesa-card {
     background: white;
-    padding: 1.5rem;
+    padding: 1rem;
     border-radius: 10px;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     transition: transform 0.3s;
+    margin-bottom: 2rem;
 }
 
 .despesa-card.despesa-paga {
@@ -407,7 +409,7 @@ input:checked + .toggle-slider:before {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.25rem;
 }
 
 .despesa-cabecalho {
@@ -454,6 +456,26 @@ input:checked + .toggle-slider:before {
     align-items: center;
     margin-left: 1rem;
     justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-excluir {
+    background: #e74c3c;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: background 0.3s;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-excluir:hover {
+    background: #c0392b;
 }
 
 .checkbox-pago {
