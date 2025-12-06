@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Controle de Despesas</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="container-login">
+        <div class="card-login">
+            <h1>💰 Controle de Despesas</h1>
+            <p class="subtitulo">Faça login para continuar</p>
+
+            <form id="formLogin">
+                <div class="form-group">
+                    <label for="usuario">Usuário</label>
+                    <input type="text" id="usuario" name="usuario" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="senha">Senha</label>
+                    <input type="password" id="senha" name="senha" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Entrar</button>
+
+                <div id="mensagem" class="mensagem"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('formLogin').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const usuario = document.getElementById('usuario').value;
+            const senha = document.getElementById('senha').value;
+            const mensagem = document.getElementById('mensagem');
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ usuario, senha })
+                });
+
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    mensagem.textContent = 'Login realizado! Redirecionando...';
+                    mensagem.className = 'mensagem sucesso';
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+                } else {
+                    mensagem.textContent = data.mensagem;
+                    mensagem.className = 'mensagem erro';
+                }
+            } catch (erro) {
+                mensagem.textContent = 'Erro ao fazer login. Tente novamente.';
+                mensagem.className = 'mensagem erro';
+            }
+        });
+    </script>
+</body>
+
+</html>

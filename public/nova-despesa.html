@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Despesa - Controle de Despesas</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="navbar">
+        <div class="container">
+            <h1>💰 Controle de Despesas</h1>
+            <div class="nav-links">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/nova-despesa" class="active">Nova Despesa</a>
+                <button id="btnLogout" class="btn-logout">Sair</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>📝 Cadastrar Nova Despesa</h2>
+
+            <form id="formDespesa">
+                <div class="form-group">
+                    <label for="valor">Valor (R$)</label>
+                    <input type="number" id="valor" name="valor" step="0.01" min="0" required>
+                </div>
+
+                <div class="form-group toggle-form-group">
+                    <label for="pago">Já está pago?</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="pago" name="pago">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="data_pagamento">Data de Pagamento</label>
+                    <input type="date" id="data_pagamento" name="data_pagamento" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="descricao">Descrição</label>
+                    <input type="text" id="descricao" name="descricao" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="categoria_id">Categoria</label>
+                    <select id="categoria_id" name="categoria_id" required>
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipo_despesa">Tipo da Despesa</label>
+                    <select id="tipo_despesa" name="tipo_despesa" required>
+                        <option value="variavel">Variável</option>
+                        <option value="fixa">Fixa</option>
+                        <option value="parcelada">Parcelada</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="grupoParcelas" style="display: none;">
+                    <label for="total_parcelas">Número de Parcelas</label>
+                    <input type="number" id="total_parcelas" name="total_parcelas" min="2" max="60">
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="dividida" name="dividida">
+                        <span>💑 Dividir com outro usuário</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Salvar Despesa</button>
+                <a href="/dashboard" class="btn btn-secondary">Cancelar</a>
+
+                <div id="mensagem" class="mensagem"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Definir data de hoje como padrão
+        document.getElementById('data_pagamento').valueAsDate = new Date();
+
+        // Carregar categorias
+        async function carregarCategorias() {
+            try {
+                const response = await fetch('/despesas/categorias');
+                const data = await response.json();
+
+                const select = document.getElementById('categoria_id');
+                data.categorias.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.id;
+                    option.textContent = cat.nome;
+                    select.appendChild(option);
+                });
+            } catch (erro) {
+                console.error('Erro ao carregar categorias:', erro);
+            }
+        }
+
+        // Mostrar/esconder campo de parcelas
+        document.getElementById('tipo_despesa').addEventListener('change', (e) => {
+            const grupoParcelas = document.getElementById('grupoParcelas');
+            const inputParcelas = document.getElementById('total_parcelas');
+
+            if (e.target.value === 'parcelada') {
+                grupoParcelas.style.display = 'block';
+                inputParcelas.required = true;
+            } else {
+                grupoParcelas.style.display = 'none';
+                inputParcelas.required = false;
+                inputParcelas.value = '';
+            }
+        });
+
+        // Enviar formulário
+        document.getElementById('formDespesa').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const dados = {
+                valor: parseFloat(formData.get('valor')),
+                pago: formData.get('pago') === 'on',
+                data_pagamento: formData.get('data_pagamento'),
+                descricao: formData.get('descricao'),
+                categoria_id: parseInt(formData.get('categoria_id')),
+                tipo_despesa: formData.get('tipo_despesa'),
+                dividida: formData.get('dividida') === 'on',
+                total_parcelas: formData.get('total_parcelas') ? parseInt(formData.get('total_parcelas')) : 1
+            };
+
+            const mensagem = document.getElementById('mensagem');
+
+            try {
+                const response = await fetch('/despesas/criar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dados)
+                });
+
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    mensagem.textContent = 'Despesa criada com sucesso! Redirecionando...';
+                    mensagem.className = 'mensagem sucesso';
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1500);
+                } else {
+                    mensagem.textContent = data.mensagem;
+                    mensagem.className = 'mensagem erro';
+                }
+            } catch (erro) {
+                mensagem.textContent = 'Erro ao criar despesa. Tente novamente.';
+                mensagem.className = 'mensagem erro';
+                console.error(erro);
+            }
+        });
+
+        // Logout
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/auth/logout', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    window.location.href = '/login';
+                }
+            } catch (erro) {
+                console.error('Erro ao fazer logout:', erro);
+            }
+        });
+
+        carregarCategorias();
+    </script>
+</body>
+</html>

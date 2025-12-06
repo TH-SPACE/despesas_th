@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Controle de Despesas</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="navbar">
+        <div class="container">
+            <h1>💰 Controle de Despesas</h1>
+            <div class="nav-links">
+                <a href="/dashboard" class="active">Dashboard</a>
+                <a href="/nova-despesa">Nova Despesa</a>
+                <button id="btnLogout" class="btn-logout">Sair</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <div class="navegacao-mes">
+                <button id="btnMesAnterior" class="btn-nav-mes">‹</button>
+                <h2 id="mesAtual">Carregando...</h2>
+                <button id="btnMesSeguinte" class="btn-nav-mes">›</button>
+            </div>
+            <div class="total-despesas">
+                <span class="label">Total do Mês:</span>
+                <span class="valor" id="totalMes">R$ 0,00</span>
+            </div>
+        </div>
+
+        <div class="despesas-tabs">
+            <button class="tab-btn active" data-tab="pendentes">Pendentes</button>
+            <button class="tab-btn" data-tab="pagas">Pagas</button>
+        </div>
+
+        <div class="despesas-container">
+            <div class="despesas-lista" id="listaDespesasPendentes">
+                <p class="carregando">Carregando despesas pendentes...</p>
+            </div>
+            <div class="despesas-lista" id="listaDespesasPagas">
+                <p class="carregando">Carregando despesas pagas...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+        let mesAtual = new Date();
+
+        // Atualizar a exibição do mês
+        function atualizarTituloMes() {
+            document.getElementById('mesAtual').textContent =
+                `${meses[mesAtual.getMonth()]} ${mesAtual.getFullYear()}`;
+        }
+
+        // Navegar para o mês anterior
+        document.getElementById('btnMesAnterior').addEventListener('click', () => {
+            mesAtual.setMonth(mesAtual.getMonth() - 1);
+            atualizarTituloMes();
+            carregarDespesas();
+        });
+
+        // Navegar para o mês seguinte
+        document.getElementById('btnMesSeguinte').addEventListener('click', () => {
+            mesAtual.setMonth(mesAtual.getMonth() + 1);
+            atualizarTituloMes();
+            carregarDespesas();
+        });
+
+        atualizarTituloMes();
+
+        async function carregarDespesas() {
+            try {
+                // Modificar a URL para incluir o mês e ano selecionado
+                const ano = mesAtual.getFullYear();
+                const mes = String(mesAtual.getMonth() + 1).padStart(2, '0'); // Janeiro é 0
+                const response = await fetch(`/despesas/mes?ano=${ano}&mes=${mes}`);
+                const data = await response.json();
+
+                if (!data.sucesso) {
+                    throw new Error(data.mensagem);
+                }
+
+                document.getElementById('totalMes').textContent =
+                    `R$ ${data.total.toFixed(2).replace('.', ',')}`;
+
+                const despesasPendentes = data.despesas.filter(d => !d.pago);
+                const despesasPagas = data.despesas.filter(d => d.pago);
+
+                // Atualizar lista de despesas pendentes
+                const listaPendentes = document.getElementById('listaDespesasPendentes');
+                if (despesasPendentes.length === 0) {
+                    listaPendentes.innerHTML = '<p class="sem-despesas">Nenhuma despesa pendente este mês.</p>';
+                } else {
+                    listaPendentes.innerHTML = despesasPendentes.map(d => `
+                        <div class="despesa-card" data-expense-id="${d.id}">
+                            <div class="despesa-info">
+                                <div class="despesa-cabecalho">
+                                    <h3>
+                                        ${d.descricao}
+                                        ${d.total_parcelas ? `(${d.parcela_atual}/${d.total_parcelas})` : ''}
+                                    </h3>
+                                    <span class="valor">R$ ${parseFloat(d.valor).toFixed(2).replace('.', ',')}</span>
+                                </div>
+                                <div class="despesa-categoria">
+                                    <span class="categoria" style="background-color: ${d.categoria_cor}">
+                                        ${d.categoria_nome}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="despesa-acoes">
+                                <label class="toggle-switch">
+                                    <input type="checkbox"
+                                           ${d.pago ? 'checked' : ''}
+                                           onchange="alterarStatus(${d.id}, this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // Atualizar lista de despesas pagas
+                const listaPagas = document.getElementById('listaDespesasPagas');
+                if (despesasPagas.length === 0) {
+                    listaPagas.innerHTML = '<p class="sem-despesas">Nenhuma despesa paga este mês.</p>';
+                } else {
+                    listaPagas.innerHTML = despesasPagas.map(d => `
+                        <div class="despesa-card despesa-paga" data-expense-id="${d.id}">
+                            <div class="despesa-info">
+                                <div class="despesa-cabecalho">
+                                    <h3>
+                                        ${d.descricao}
+                                        ${d.total_parcelas ? `(${d.parcela_atual}/${d.total_parcelas})` : ''}
+                                    </h3>
+                                    <span class="valor">R$ ${parseFloat(d.valor).toFixed(2).replace('.', ',')}</span>
+                                </div>
+                                <div class="despesa-categoria">
+                                    <span class="categoria" style="background-color: ${d.categoria_cor}">
+                                        ${d.categoria_nome}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="despesa-acoes">
+                                <label class="toggle-switch">
+                                    <input type="checkbox"
+                                           checked
+                                           onchange="alterarStatus(${d.id}, this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (erro) {
+                document.getElementById('listaDespesasPendentes').innerHTML =
+                    '<p class="erro">Erro ao carregar despesas.</p>';
+                document.getElementById('listaDespesasPagas').innerHTML = '';
+                console.error(erro);
+            }
+        }
+
+        async function alterarStatus(id, pago) {
+            try {
+                const response = await fetch(`/despesas/${id}/pago`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ pago })
+                });
+
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    // Obter o elemento da despesa
+                    const despesaCard = document.querySelector(`[data-expense-id="${id}"]`);
+                    if (despesaCard) {
+                        // Obter o container pai do card
+                        const container = despesaCard.parentElement;
+
+                        // Remover o card do container atual
+                        despesaCard.remove();
+
+                        // Determinar para qual lista mover
+                        const novaLista = pago ?
+                            document.getElementById('listaDespesasPagas') :
+                            document.getElementById('listaDespesasPendentes');
+
+                        // Adicionar o card à nova lista
+                        novaLista.appendChild(despesaCard);
+
+                        // Atualizar o estado visual do card
+                        if (pago) {
+                            despesaCard.classList.add('despesa-paga');
+                            // Atualizar o texto do toggle para "Pago"
+                            const toggleLabel = despesaCard.querySelector('.toggle-label');
+                            if (toggleLabel) toggleLabel.textContent = 'Pago';
+                        } else {
+                            despesaCard.classList.remove('despesa-paga');
+                            // Atualizar o texto do toggle para "Pendente"
+                            const toggleLabel = despesaCard.querySelector('.toggle-label');
+                            if (toggleLabel) toggleLabel.textContent = 'Pendente';
+                        }
+
+                        // Atualizar o checkbox
+                        const checkbox = despesaCard.querySelector('input[type="checkbox"]');
+                        if (checkbox) checkbox.checked = pago;
+                    }
+
+                    // Atualizar o total
+                    carregarDespesasTotal();
+                } else {
+                    alert('Erro ao atualizar status');
+                }
+            } catch (erro) {
+                alert('Erro ao atualizar status');
+                console.error(erro);
+            }
+        }
+
+        // Função para atualizar apenas o total
+        async function carregarDespesasTotal() {
+            try {
+                const ano = mesAtual.getFullYear();
+                const mes = String(mesAtual.getMonth() + 1).padStart(2, '0');
+                const response = await fetch(`/despesas/mes?ano=${ano}&mes=${mes}`);
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    document.getElementById('totalMes').textContent =
+                        `R$ ${data.total.toFixed(2).replace('.', ',')}`;
+                }
+            } catch (erro) {
+                console.error('Erro ao atualizar total:', erro);
+            }
+        }
+
+        // Função para alternar entre abas
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remover classe 'active' de todos os botões
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                // Adicionar classe 'active' ao botão clicado
+                button.classList.add('active');
+
+                // Ocultar todas as listas
+                document.querySelectorAll('.despesas-lista').forEach(list => {
+                    list.style.display = 'none';
+                });
+
+                // Mostrar a lista apropriada com base no atributo data-tab
+                const tab = button.getAttribute('data-tab');
+                if (tab === 'pendentes') {
+                    document.getElementById('listaDespesasPendentes').style.display = 'block';
+                } else if (tab === 'pagas') {
+                    document.getElementById('listaDespesasPagas').style.display = 'block';
+                }
+            });
+        });
+
+        // Definir estado inicial das abas ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicialmente mostrar a aba de pendentes
+            document.getElementById('listaDespesasPendentes').style.display = 'block';
+            document.getElementById('listaDespesasPagas').style.display = 'none';
+        });
+
+        async function excluirDespesa(id) {
+            if (!confirm('Tem certeza que deseja excluir esta despesa?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/despesas/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    // Remover o card da lista sem recarregar tudo
+                    const despesaCard = document.querySelector(`[data-expense-id="${id}"]`);
+                    if (despesaCard) {
+                        despesaCard.remove();
+                    }
+
+                    // Atualizar o total
+                    carregarDespesasTotal();
+                } else {
+                    alert(data.mensagem);
+                }
+            } catch (erro) {
+                alert('Erro ao excluir despesa');
+                console.error(erro);
+            }
+        }
+
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/auth/logout', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    window.location.href = '/login';
+                }
+            } catch (erro) {
+                console.error('Erro ao fazer logout:', erro);
+            }
+        });
+
+        carregarDespesas();
+    </script>
+</body>
+
+</html>
