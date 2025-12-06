@@ -4,20 +4,20 @@ const db = require("../config/database");
 async function criarUsuarios() {
   try {
     // Hash das senhas
-    const senhaHash1 = await bcrypt.hash("senha123", 10);
-    const senhaHash2 = await bcrypt.hash("senha456", 10);
+    const senhaHash1 = await bcrypt.hash("thiago102030", 10);
+    const senhaHash2 = await bcrypt.hash("vanessa102030", 10);
 
     // Criar primeiro usuário (você)
     await db.query(
       "INSERT INTO usuarios (nome, usuario, senha) VALUES (?, ?, ?)",
-      ["Thiago", "thiago", senhaHash1]
+      ["Thiago", "Thiago", senhaHash1]
     );
     console.log("✅ Usuário 1 criado com sucesso!");
 
     // Criar segundo usuário (sua esposa)
     await db.query(
       "INSERT INTO usuarios (nome, usuario, senha) VALUES (?, ?, ?)",
-      ["Vanessa", "vanessa", senhaHash2]
+      ["Vanessa", "Vanessa", senhaHash2]
     );
     console.log("✅ Usuário 2 criado com sucesso!");
 
