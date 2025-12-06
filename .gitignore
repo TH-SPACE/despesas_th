@@ -3,10 +3,10 @@ node_modules/
 package-lock.json
 yarn.lock
 
-# Variáveis de ambiente
-.env
-.env.local
-.env.production
+# # Variáveis de ambiente
+# .env
+# .env.local
+# .env.production
 
 # Logs
 logs/
