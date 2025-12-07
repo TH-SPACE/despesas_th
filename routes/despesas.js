@@ -164,10 +164,18 @@ router.post("/criar", async (req, res) => {
   const usuarioId = req.session.usuarioId;
 
   try {
+    console.log('Dados recebidos:', { valor, dividida }); // Log para depuração
+    // Se a despesa for dividida, divide o valor por 2
+    let valorFinal = parseFloat(valor);
+    if (dividida) {
+      valorFinal = parseFloat(valor) / 2;
+      console.log('Valor após divisão:', valorFinal); // Log para depuração
+    }
+
     if (tipo_despesa === "parcelada" && total_parcelas > 1) {
       // Criar despesa parcelada
-      // O valor informado já é o valor de cada parcela
-      const valorParcela = parseFloat(valor);
+      // O valor informado já é o valor de cada parcela, já dividido se necessário
+      const valorParcela = valorFinal;
       const dataPagamento = new Date(data_pagamento);
 
       for (let i = 1; i <= total_parcelas; i++) {
@@ -206,7 +214,7 @@ router.post("/criar", async (req, res) => {
             `,
         [
           usuarioId,
-          valor,
+          valorFinal,
           descricao,
           categoria_id,
           tipo_despesa,
