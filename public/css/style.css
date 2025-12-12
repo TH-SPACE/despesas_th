@@ -581,3 +581,9 @@ html {
     40% { content: '..'; }
     60%, 100% { content: '...'; }
 }
+
+/* Prevenir zoom */
+body {
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+}
