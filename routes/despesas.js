@@ -29,13 +29,7 @@ router.get('/', async (req, res) => {
 
         query += ' ORDER BY d.data_vencimento ASC, d.id DESC';
 
-        console.log('Query executada:', query); // Log para debug
-        console.log('Parâmetros:', params); // Log para debug
-
         const [despesas] = await db.query(query, params);
-
-        // Adicionando log para verificar o resultado
-        console.log('Despesas retornadas:', despesas);
 
         res.json(despesas);
 
@@ -60,6 +54,10 @@ router.post('/', async (req, res) => {
         } = req.body;
 
         const usuarioId = req.session.usuario.id;
+        const usuarioNome = req.session.usuario.nome;
+
+        // Log de dados recebidos
+        console.log(`📥 Nova despesa criada por: ${usuarioNome} (ID: ${usuarioId}) - Descrição: "${descricao}", Valor: ${valor}, Tipo: ${tipo}`);
 
         // Validações
         if (!descricao || !valor || !categoria_id || !tipo || !data_vencimento) {
@@ -185,6 +183,7 @@ router.patch('/:id/pagar', async (req, res) => {
         const { id } = req.params;
         const { paga } = req.body;
         const usuarioId = req.session.usuario.id;
+        const usuarioNome = req.session.usuario.nome;
 
         const dataPagamento = paga ? new Date().toISOString().split('T')[0] : null;
 
@@ -193,9 +192,12 @@ router.patch('/:id/pagar', async (req, res) => {
             [paga, dataPagamento, id, usuarioId]
         );
 
-        res.json({ 
-            sucesso: true, 
-            mensagem: paga ? 'Despesa marcada como paga' : 'Despesa desmarcada' 
+        // Log de ação realizada
+        console.log(`💰 Despesa ID: ${id} marcada como ${paga ? 'paga' : 'não paga'} por: ${usuarioNome} (ID: ${usuarioId})`);
+
+        res.json({
+            sucesso: true,
+            mensagem: paga ? 'Despesa marcada como paga' : 'Despesa desmarcada'
         });
 
     } catch (erro) {
@@ -209,15 +211,29 @@ router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const usuarioId = req.session.usuario.id;
+        const usuarioNome = req.session.usuario.nome;
+
+        // Obter informações da despesa antes de excluir para log
+        const [despesas] = await db.query(
+            'SELECT descricao, valor FROM despesas WHERE id = ? AND usuario_id = ?',
+            [id, usuarioId]
+        );
 
         await db.query(
             'DELETE FROM despesas WHERE id = ? AND usuario_id = ?',
             [id, usuarioId]
         );
 
-        res.json({ 
-            sucesso: true, 
-            mensagem: 'Despesa excluída com sucesso' 
+        if (despesas.length > 0) {
+            // Log de exclusão
+            console.log(`🗑️ Despesa excluída por: ${usuarioNome} (ID: ${usuarioId}) - Descrição: "${despesas[0].descricao}", Valor: ${despesas[0].valor}`);
+        } else {
+            console.log(`🗑️ Tentativa de exclusão de despesa inexistente por: ${usuarioNome} (ID: ${usuarioId}) - ID: ${id}`);
+        }
+
+        res.json({
+            sucesso: true,
+            mensagem: 'Despesa excluída com sucesso'
         });
 
     } catch (erro) {

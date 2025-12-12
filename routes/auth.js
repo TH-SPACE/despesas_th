@@ -44,8 +44,11 @@ router.post('/login', async (req, res) => {
             nome: usuarioEncontrado.nome
         };
 
-        res.json({ 
-            sucesso: true, 
+        // Log de login bem-sucedido
+        console.log(`✅ Login bem-sucedido: Usuário "${usuarioEncontrado.usuario}" (ID: ${usuarioEncontrado.id}) fez login às ${new Date().toLocaleString()}`);
+
+        res.json({
+            sucesso: true,
             mensagem: 'Login realizado com sucesso',
             usuario: req.session.usuario
         });
@@ -60,15 +63,23 @@ router.post('/login', async (req, res) => {
 
 // Rota de logout
 router.post('/logout', (req, res) => {
+    const usuarioNome = req.session.usuario ? req.session.usuario.nome : 'Usuário desconhecido';
+    const usuarioId = req.session.usuario ? req.session.usuario.id : 'ID desconhecido';
+
     req.session.destroy((erro) => {
         if (erro) {
-            return res.status(500).json({ 
-                erro: 'Erro ao fazer logout' 
+            console.error(`Erro no logout de ${usuarioNome} (ID: ${usuarioId}):`, erro);
+            return res.status(500).json({
+                erro: 'Erro ao fazer logout'
             });
         }
-        res.json({ 
-            sucesso: true, 
-            mensagem: 'Logout realizado com sucesso' 
+
+        // Log de logout bem-sucedido
+        console.log(`🚪 Logout realizado: Usuário "${usuarioNome}" (ID: ${usuarioId}) fez logout às ${new Date().toLocaleString()}`);
+
+        res.json({
+            sucesso: true,
+            mensagem: 'Logout realizado com sucesso'
         });
     });
 });
