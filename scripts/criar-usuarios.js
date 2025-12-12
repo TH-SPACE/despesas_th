@@ -1,38 +1,64 @@
 const bcrypt = require("bcrypt");
-const db = require("../config/database");
+const mysql = require("mysql2/promise");
+require("dotenv").config();
+
+// EDITE AQUI: Adicione os usuários que deseja criar
+const usuarios = [
+  { usuario: "thiago", nome: "Thiago", senha: "thi102030" },
+  { usuario: "vanessa", nome: "Vanessa", senha: "van102030" },
+];
 
 async function criarUsuarios() {
+  let connection;
+
   try {
-    // Hash das senhas
-    const senhaHash1 = await bcrypt.hash("thiago102030", 10);
-    const senhaHash2 = await bcrypt.hash("vanessa102030", 10);
+    // Conectar ao banco
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST || "localhost",
+      user: process.env.DB_USER || "root",
+      password: process.env.DB_PASSWORD || "",
+      database: process.env.DB_NAME || "despesas_domesticas",
+      port: process.env.DB_PORT || 3306,
+    });
 
-    // Criar primeiro usuário (você)
-    await db.query(
-      "INSERT INTO usuarios (nome, usuario, senha) VALUES (?, ?, ?)",
-      ["Thiago", "Thiago", senhaHash1]
-    );
-    console.log("✅ Usuário 1 criado com sucesso!");
+    console.log("✅ Conectado ao banco de dados");
 
-    // Criar segundo usuário (sua esposa)
-    await db.query(
-      "INSERT INTO usuarios (nome, usuario, senha) VALUES (?, ?, ?)",
-      ["Vanessa", "Vanessa", senhaHash2]
-    );
-    console.log("✅ Usuário 2 criado com sucesso!");
+    for (const user of usuarios) {
+      // Verificar se usuário já existe
+      const [rows] = await connection.query(
+        "SELECT id FROM usuarios WHERE usuario = ?",
+        [user.usuario]
+      );
 
+      if (rows.length > 0) {
+        console.log(`⚠️  Usuário "${user.usuario}" já existe, pulando...`);
+        continue;
+      }
+
+      // Hash da senha
+      const senhaHash = await bcrypt.hash(user.senha, 10);
+
+      // Inserir usuário
+      await connection.query(
+        "INSERT INTO usuarios (usuario, nome, senha) VALUES (?, ?, ?)",
+        [user.usuario, user.nome, senhaHash]
+      );
+
+      console.log(`✅ Usuário "${user.usuario}" criado com sucesso!`);
+    }
+
+    console.log("\n🎉 Processo concluído!");
     console.log("\n📋 Credenciais criadas:");
-    console.log("Usuário 1: thiago / senha123");
-    console.log("Usuário 2: vanessa / senha456");
-    console.log("\n⚠️  IMPORTANTE: Altere essas senhas após o primeiro login!");
-    console.log(
-      "💡 DICA: Edite este arquivo para personalizar os nomes de usuário!"
-    );
-
-    process.exit(0);
+    usuarios.forEach((user) => {
+      console.log(`   Usuário: ${user.usuario} | Senha: ${user.senha}`);
+    });
+    console.log("\n⚠️  IMPORTANTE: Altere as senhas após o primeiro login!");
   } catch (erro) {
-    console.error("❌ Erro ao criar usuários:", erro);
-    process.exit(1);
+    console.error("❌ Erro:", erro.message);
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
   }
 }
 

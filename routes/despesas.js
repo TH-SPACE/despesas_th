@@ -1,295 +1,255 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const db = require("../config/database");
-const { verificarAutenticacao } = require("../middleware/auth");
+const db = require('../config/database');
+const { verificarAutenticacao } = require('../middleware/auth');
 
-// Todas as rotas requerem autenticação
+// Todas as rotas exigem autenticação
 router.use(verificarAutenticacao);
 
-// Listar despesas de um mês específico (via query string)
-router.get("/mes", async (req, res) => {
-  try {
-    const { mes, ano } = req.query;
-    const usuarioId = req.session.usuarioId;
+// Listar despesas do usuário
+router.get('/', async (req, res) => {
+    try {
+        const { mes, ano } = req.query;
+        const usuarioId = req.session.usuario.id;
 
-    const [despesas] = await db.query(
-      `
-            SELECT
-                d.*,
-                c.nome as categoria_nome,
-                c.cor as categoria_cor,
-                u.nome as usuario_nome
+        let query = `
+            SELECT d.*, c.nome as categoria_nome, c.cor as categoria_cor,
+                   u.nome as usuario_compartilhado_nome
             FROM despesas d
-            JOIN categorias c ON d.categoria_id = c.id
-            JOIN usuarios u ON d.usuario_id = u.id
-            WHERE MONTH(d.data_pagamento) = ?
-            AND YEAR(d.data_pagamento) = ?
-            AND (d.usuario_id = ? OR d.dividida = TRUE)
-            ORDER BY d.data_pagamento DESC, d.criado_em DESC
-        `,
-      [mes, ano, usuarioId]
-    );
+            LEFT JOIN categorias c ON d.categoria_id = c.id
+            LEFT JOIN usuarios u ON d.usuario_compartilhado_id = u.id
+            WHERE d.usuario_id = ?
+        `;
+        const params = [usuarioId];
 
-    // Calcular total
-    let total = 0;
-    despesas.forEach((d) => {
-      if (d.dividida) {
-        total += parseFloat(d.valor) / 2;
-      } else if (d.usuario_id === usuarioId) {
-        total += parseFloat(d.valor);
-      }
-    });
+        if (mes && ano) {
+            query += ' AND MONTH(d.data_vencimento) = ? AND YEAR(d.data_vencimento) = ?';
+            params.push(mes, ano);
+        }
 
-    res.json({ sucesso: true, despesas, total });
-  } catch (erro) {
-    console.error("Erro ao buscar despesas:", erro);
-    res
-      .status(500)
-      .json({ sucesso: false, mensagem: "Erro ao buscar despesas" });
-  }
-});
+        query += ' ORDER BY d.data_vencimento ASC, d.id DESC';
 
-// Listar despesas de um mês específico (via parâmetro de rota - mantido para compatibilidade)
-router.get("/mes/:mes/:ano", async (req, res) => {
-  try {
-    const { mes, ano } = req.params;
-    const usuarioId = req.session.usuarioId;
+        console.log('Query executada:', query); // Log para debug
+        console.log('Parâmetros:', params); // Log para debug
 
-    const [despesas] = await db.query(
-      `
-            SELECT
-                d.*,
-                c.nome as categoria_nome,
-                c.cor as categoria_cor,
-                u.nome as usuario_nome
-            FROM despesas d
-            JOIN categorias c ON d.categoria_id = c.id
-            JOIN usuarios u ON d.usuario_id = u.id
-            WHERE MONTH(d.data_pagamento) = ?
-            AND YEAR(d.data_pagamento) = ?
-            AND (d.usuario_id = ? OR d.dividida = TRUE)
-            ORDER BY d.data_pagamento DESC, d.criado_em DESC
-        `,
-      [mes, ano, usuarioId]
-    );
+        const [despesas] = await db.query(query, params);
 
-    // Calcular total
-    let total = 0;
-    despesas.forEach((d) => {
-      if (d.dividida) {
-        total += parseFloat(d.valor) / 2;
-      } else if (d.usuario_id === usuarioId) {
-        total += parseFloat(d.valor);
-      }
-    });
+        // Adicionando log para verificar o resultado
+        console.log('Despesas retornadas:', despesas);
 
-    res.json({ sucesso: true, despesas, total });
-  } catch (erro) {
-    console.error("Erro ao buscar despesas:", erro);
-    res
-      .status(500)
-      .json({ sucesso: false, mensagem: "Erro ao buscar despesas" });
-  }
-});
+        res.json(despesas);
 
-// Listar despesas do mês atual (mantido para compatibilidade)
-router.get("/mes-atual", async (req, res) => {
-  try {
-    const usuarioId = req.session.usuarioId;
-    const [despesas] = await db.query(
-      `
-            SELECT
-                d.*,
-                c.nome as categoria_nome,
-                c.cor as categoria_cor,
-                u.nome as usuario_nome
-            FROM despesas d
-            JOIN categorias c ON d.categoria_id = c.id
-            JOIN usuarios u ON d.usuario_id = u.id
-            WHERE MONTH(d.data_pagamento) = MONTH(CURRENT_DATE())
-            AND YEAR(d.data_pagamento) = YEAR(CURRENT_DATE())
-            AND (d.usuario_id = ? OR d.dividida = TRUE)
-            ORDER BY d.data_pagamento DESC, d.criado_em DESC
-        `,
-      [usuarioId]
-    );
-
-    // Calcular total
-    let total = 0;
-    despesas.forEach((d) => {
-      if (d.dividida) {
-        total += parseFloat(d.valor) / 2;
-      } else if (d.usuario_id === usuarioId) {
-        total += parseFloat(d.valor);
-      }
-    });
-
-    res.json({ sucesso: true, despesas, total });
-  } catch (erro) {
-    console.error("Erro ao buscar despesas:", erro);
-    res
-      .status(500)
-      .json({ sucesso: false, mensagem: "Erro ao buscar despesas" });
-  }
-});
-
-// Buscar todas as categorias
-router.get("/categorias", async (req, res) => {
-  try {
-    const [categorias] = await db.query(
-      "SELECT * FROM categorias ORDER BY nome"
-    );
-    res.json({ sucesso: true, categorias });
-  } catch (erro) {
-    console.error("Erro ao buscar categorias:", erro);
-    res
-      .status(500)
-      .json({ sucesso: false, mensagem: "Erro ao buscar categorias" });
-  }
+    } catch (erro) {
+        console.error('Erro ao listar despesas:', erro);
+        res.status(500).json({ erro: 'Erro ao listar despesas', detalhe: erro.message });
+    }
 });
 
 // Criar nova despesa
-router.post("/criar", async (req, res) => {
-  const {
-    valor,
-    pago,
-    data_pagamento,
-    descricao,
-    categoria_id,
-    tipo_despesa,
-    dividida,
-    total_parcelas,
-  } = req.body;
-
-  const usuarioId = req.session.usuarioId;
-
-  try {
-    console.log('Dados recebidos:', { valor, dividida }); // Log para depuração
-    // Se a despesa for dividida, divide o valor por 2
-    let valorFinal = parseFloat(valor);
-    if (dividida) {
-      valorFinal = parseFloat(valor) / 2;
-      console.log('Valor após divisão:', valorFinal); // Log para depuração
-    }
-
-    if (tipo_despesa === "parcelada" && total_parcelas > 1) {
-      // Criar despesa parcelada
-      // O valor informado já é o valor de cada parcela, já dividido se necessário
-      const valorParcela = valorFinal;
-      const dataPagamento = new Date(data_pagamento);
-
-      for (let i = 1; i <= total_parcelas; i++) {
-        const dataParcela = new Date(dataPagamento);
-        dataParcela.setMonth(dataParcela.getMonth() + (i - 1));
-
-        await db.query(
-          `
-                    INSERT INTO despesas
-                    (usuario_id, valor, descricao, categoria_id, tipo_despesa,
-                     data_pagamento, pago, dividida, parcela_atual, total_parcelas)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `,
-          [
-            usuarioId,
-            valorParcela,
-            `${descricao} (${i}/${total_parcelas})`,
+router.post('/', async (req, res) => {
+    try {
+        const {
+            descricao,
+            valor,
             categoria_id,
-            tipo_despesa,
-            dataParcela.toISOString().split("T")[0],
-            i === 1 ? (pago ? 1 : 0) : 0,
-            dividida ? 1 : 0,
-            i,
+            tipo,
+            data_vencimento,
             total_parcelas,
-          ]
-        );
-      }
-    } else {
-      // Criar despesa única ou fixa
-      await db.query(
-        `
-                INSERT INTO despesas
-                (usuario_id, valor, descricao, categoria_id, tipo_despesa,
-                 data_pagamento, pago, dividida)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `,
-        [
-          usuarioId,
-          valorFinal,
-          descricao,
-          categoria_id,
-          tipo_despesa,
-          data_pagamento,
-          pago ? 1 : 0,
-          dividida ? 1 : 0,
-        ]
-      );
-    }
+            dividir,
+            usuario_compartilhado_id
+        } = req.body;
 
-    res.json({ sucesso: true, mensagem: "Despesa criada com sucesso" });
-  } catch (erro) {
-    console.error("Erro ao criar despesa:", erro);
-    res.status(500).json({ sucesso: false, mensagem: "Erro ao criar despesa" });
-  }
+        const usuarioId = req.session.usuario.id;
+
+        // Validações
+        if (!descricao || !valor || !categoria_id || !tipo || !data_vencimento) {
+            return res.status(400).json({ erro: 'Dados incompletos' });
+        }
+
+        const valorFinal = dividir ? parseFloat(valor) / 2 : parseFloat(valor);
+        const dividida = dividir === true || dividir === 'true';
+        const usuarioCompartilhado = dividida ? usuario_compartilhado_id : null;
+
+        // Se for despesa fixa, criar para todos os meses do ano
+        if (tipo === 'fixa') {
+            const dataBase = new Date(data_vencimento);
+            const anoAtual = dataBase.getFullYear();
+            const diaVencimento = dataBase.getDate();
+            const mesInicial = dataBase.getMonth();
+
+            for (let mes = mesInicial; mes < 12; mes++) {
+                const dataVenc = new Date(anoAtual, mes, diaVencimento);
+                
+                // Inserir para o usuário principal
+                await db.query(
+                    `INSERT INTO despesas (usuario_id, categoria_id, descricao, valor, tipo, 
+                     data_vencimento, dividida, usuario_compartilhado_id)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [usuarioId, categoria_id, descricao, valorFinal, tipo, 
+                     dataVenc, dividida, usuarioCompartilhado]
+                );
+
+                // Se for dividida, inserir para o outro usuário
+                if (dividida && usuarioCompartilhado) {
+                    await db.query(
+                        `INSERT INTO despesas (usuario_id, categoria_id, descricao, valor, tipo, 
+                         data_vencimento, dividida, usuario_compartilhado_id)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [usuarioCompartilhado, categoria_id, descricao, valorFinal, tipo, 
+                         dataVenc, dividida, usuarioId]
+                    );
+                }
+            }
+
+            return res.json({ 
+                sucesso: true, 
+                mensagem: 'Despesa fixa criada para todos os meses do ano' 
+            });
+        }
+
+        // Se for parcelada, criar múltiplas despesas
+        if (tipo === 'parcelada' && total_parcelas > 1) {
+            const grupoParcelamento = `${Date.now()}-${usuarioId}`;
+            const dataBase = new Date(data_vencimento);
+
+            for (let i = 1; i <= total_parcelas; i++) {
+                const dataVenc = new Date(dataBase);
+                dataVenc.setMonth(dataVenc.getMonth() + (i - 1));
+
+                // Inserir para o usuário principal
+                await db.query(
+                    `INSERT INTO despesas (usuario_id, categoria_id, descricao, valor, tipo, 
+                     data_vencimento, parcela_atual, total_parcelas, grupo_parcelamento, 
+                     dividida, usuario_compartilhado_id)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [usuarioId, categoria_id, `${descricao} (${i}/${total_parcelas})`, 
+                     valorFinal, tipo, dataVenc, i, total_parcelas, grupoParcelamento, 
+                     dividida, usuarioCompartilhado]
+                );
+
+                // Se for dividida, inserir para o outro usuário
+                if (dividida && usuarioCompartilhado) {
+                    await db.query(
+                        `INSERT INTO despesas (usuario_id, categoria_id, descricao, valor, tipo, 
+                         data_vencimento, parcela_atual, total_parcelas, grupo_parcelamento, 
+                         dividida, usuario_compartilhado_id)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [usuarioCompartilhado, categoria_id, `${descricao} (${i}/${total_parcelas})`, 
+                         valorFinal, tipo, dataVenc, i, total_parcelas, grupoParcelamento, 
+                         dividida, usuarioId]
+                    );
+                }
+            }
+
+            return res.json({ 
+                sucesso: true, 
+                mensagem: `Despesa parcelada em ${total_parcelas}x criada com sucesso` 
+            });
+        }
+
+        // Despesa variável simples
+        const [resultado] = await db.query(
+            `INSERT INTO despesas (usuario_id, categoria_id, descricao, valor, tipo, 
+             data_vencimento, dividida, usuario_compartilhado_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [usuarioId, categoria_id, descricao, valorFinal, tipo, 
+             data_vencimento, dividida, usuarioCompartilhado]
+        );
+
+        // Se for dividida, inserir para o outro usuário
+        if (dividida && usuarioCompartilhado) {
+            await db.query(
+                `INSERT INTO despesas (usuario_id, categoria_id, descricao, valor, tipo, 
+                 data_vencimento, dividida, usuario_compartilhado_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [usuarioCompartilhado, categoria_id, descricao, valorFinal, tipo, 
+                 data_vencimento, dividida, usuarioId]
+            );
+        }
+
+        res.json({ 
+            sucesso: true, 
+            mensagem: 'Despesa cadastrada com sucesso',
+            id: resultado.insertId
+        });
+
+    } catch (erro) {
+        console.error('Erro ao criar despesa:', erro);
+        res.status(500).json({ erro: 'Erro ao cadastrar despesa' });
+    }
 });
 
-// Atualizar status de pagamento
-router.put("/:id/pago", async (req, res) => {
-  const { id } = req.params;
-  const { pago } = req.body;
-  const usuarioId = req.session.usuarioId;
+// Marcar despesa como paga/não paga
+router.patch('/:id/pagar', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { paga } = req.body;
+        const usuarioId = req.session.usuario.id;
 
-  try {
-    // Verificar se a despesa pertence ao usuário ou é dividida
-    const [despesas] = await db.query(
-      "SELECT * FROM despesas WHERE id = ? AND (usuario_id = ? OR dividida = TRUE)",
-      [id, usuarioId]
-    );
+        const dataPagamento = paga ? new Date().toISOString().split('T')[0] : null;
 
-    if (despesas.length === 0) {
-      return res
-        .status(404)
-        .json({ sucesso: false, mensagem: "Despesa não encontrada" });
+        await db.query(
+            'UPDATE despesas SET paga = ?, data_pagamento = ? WHERE id = ? AND usuario_id = ?',
+            [paga, dataPagamento, id, usuarioId]
+        );
+
+        res.json({ 
+            sucesso: true, 
+            mensagem: paga ? 'Despesa marcada como paga' : 'Despesa desmarcada' 
+        });
+
+    } catch (erro) {
+        console.error('Erro ao atualizar despesa:', erro);
+        res.status(500).json({ erro: 'Erro ao atualizar despesa' });
     }
-
-    await db.query("UPDATE despesas SET pago = ? WHERE id = ?", [
-      pago ? 1 : 0,
-      id,
-    ]);
-
-    res.json({ sucesso: true, mensagem: "Status atualizado com sucesso" });
-  } catch (erro) {
-    console.error("Erro ao atualizar status:", erro);
-    res
-      .status(500)
-      .json({ sucesso: false, mensagem: "Erro ao atualizar status" });
-  }
 });
 
 // Excluir despesa
-router.delete("/:id", async (req, res) => {
-  const { id } = req.params;
-  const usuarioId = req.session.usuarioId;
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const usuarioId = req.session.usuario.id;
 
-  try {
-    const [despesas] = await db.query(
-      "SELECT * FROM despesas WHERE id = ? AND usuario_id = ?",
-      [id, usuarioId]
-    );
+        await db.query(
+            'DELETE FROM despesas WHERE id = ? AND usuario_id = ?',
+            [id, usuarioId]
+        );
 
-    if (despesas.length === 0) {
-      return res
-        .status(404)
-        .json({ sucesso: false, mensagem: "Despesa não encontrada" });
+        res.json({ 
+            sucesso: true, 
+            mensagem: 'Despesa excluída com sucesso' 
+        });
+
+    } catch (erro) {
+        console.error('Erro ao excluir despesa:', erro);
+        res.status(500).json({ erro: 'Erro ao excluir despesa' });
     }
+});
 
-    await db.query("DELETE FROM despesas WHERE id = ?", [id]);
-    res.json({ sucesso: true, mensagem: "Despesa excluída com sucesso" });
-  } catch (erro) {
-    console.error("Erro ao excluir despesa:", erro);
-    res
-      .status(500)
-      .json({ sucesso: false, mensagem: "Erro ao excluir despesa" });
-  }
+// Listar categorias
+router.get('/categorias', async (req, res) => {
+    try {
+        const [categorias] = await db.query('SELECT * FROM categorias ORDER BY nome');
+        res.json(categorias);
+    } catch (erro) {
+        console.error('Erro ao listar categorias:', erro);
+        res.status(500).json({ erro: 'Erro ao listar categorias' });
+    }
+});
+
+// Listar usuários (para compartilhar despesas)
+router.get('/usuarios', async (req, res) => {
+    try {
+        const usuarioId = req.session.usuario.id;
+        const [usuarios] = await db.query(
+            'SELECT id, nome, usuario FROM usuarios WHERE id != ?',
+            [usuarioId]
+        );
+        res.json(usuarios);
+    } catch (erro) {
+        console.error('Erro ao listar usuários:', erro);
+        res.status(500).json({ erro: 'Erro ao listar usuários' });
+    }
 });
 
 module.exports = router;

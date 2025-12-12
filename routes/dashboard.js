@@ -1,29 +1,12 @@
 const express = require('express');
-const path = require('path');
 const router = express.Router();
-const { verificarAutenticacao, redirecionarSeAutenticado } = require('../middleware/auth');
+const { verificarAutenticacao } = require('../middleware/auth');
 
-// Página de login
-router.get('/login', redirecionarSeAutenticado, (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/login.html'));
-});
-
-// Página inicial redireciona para dashboard
-router.get('/', (req, res) => {
-    if (req.session && req.session.usuarioId) {
-        return res.redirect('/dashboard');
-    }
-    res.redirect('/login');
-});
-
-// Dashboard
+// Rota protegida do dashboard
 router.get('/dashboard', verificarAutenticacao, (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/dashboard.html'));
-});
-
-// Página de cadastro de despesas
-router.get('/nova-despesa', verificarAutenticacao, (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/nova-despesa.html'));
+    res.json({ 
+        usuario: req.session.usuario 
+    });
 });
 
 module.exports = router;

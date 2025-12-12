@@ -3,420 +3,257 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Controle de Despesas Thiago e Vanessa</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/custom.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Dashboard - Sistema de Despesas</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/dashboard">
-                <i class="bi bi-currency-dollar me-2"></i>Controle de Despesas
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/dashboard">
-                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/nova-despesa">
-                            <i class="bi bi-plus-circle me-1"></i>Nova Despesa
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <button id="btnLogout" class="btn btn-outline-light ms-2">
-                            <i class="bi bi-box-arrow-right me-1"></i>Sair
-                        </button>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container mt-3">
-        <!-- Header com totais e navegação de mês -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card dashboard-total-card">
-                    <div class="card-body text-center">
-                        <h5 class="text-light mb-1">Total do Mês</h5>
-                        <h1 class="fw-bold mb-2" id="totalMes">R$ 0,00</h1>
-
-                        <div class="row mt-2">
-                            <div class="col-6">
-                                <small class="text-light d-block">Pago</small>
-                                <h5 class="fw-bold text-success mb-0" id="totalPago">R$ 0,00</h5>
-                            </div>
-                            <div class="col-6">
-                                <small class="text-light d-block">Pendente</small>
-                                <h5 class="fw-bold text-danger mb-0" id="totalPendente">R$ 0,00</h5>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 mt-2">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <button id="btnMesAnterior" class="btn btn-mes btn-outline-primary btn-sm">
-                                <i class="bi bi-chevron-left"></i>
-                            </button>
-                            <h6 class="mb-0" id="mesAtual">Carregando...</h6>
-                            <button id="btnMesSeguinte" class="btn btn-mes btn-outline-primary btn-sm">
-                                <i class="bi bi-chevron-right"></i>
-                            </button>
-                        </div>
-                        <small class="text-muted">Navegação</small>
-                    </div>
-                </div>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Minhas Despesas</h1>
+            <div class="user-info">
+                <span class="user-name" id="nomeUsuario"></span>
+                <button class="btn-logout" id="btnLogout">Sair</button>
             </div>
         </div>
 
-        <!-- Abas de despesas -->
-        <div class="card">
-            <div class="card-header p-0">
-                <ul class="nav nav-tabs nav-fill border-0" id="despesasTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active px-2 py-2" id="pendentes-tab" data-bs-toggle="tab"
-                            data-bs-target="#pendentes" type="button" role="tab">
-                            <i class="bi bi-clock-history me-1"></i>Pendentes
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link px-2 py-2" id="pagas-tab" data-bs-toggle="tab" data-bs-target="#pagas"
-                            type="button" role="tab">
-                            <i class="bi bi-check-circle me-1"></i>Pagas
-                        </button>
-                    </li>
-                </ul>
+        <div class="stats-container">
+            <div class="stat-card total">
+                <h3>Total</h3>
+                <div class="value" id="totalMes">R$ 0</div>
             </div>
-
-            <div class="card-body p-2">
-                <!-- Conteúdo das abas -->
-                <div class="tab-content" id="despesasTabContent">
-                    <div class="tab-pane fade show active" id="pendentes" role="tabpanel">
-                        <div class="despesas-lista" id="listaDespesasPendentes">
-                            <div class="text-center py-3">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Carregando...</span>
-                                </div>
-                                <p class="mt-1 mb-0">Carregando despesas pendentes...</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="tab-pane fade" id="pagas" role="tabpanel">
-                        <div class="despesas-lista" id="listaDespesasPagas">
-                            <div class="text-center py-3">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Carregando...</span>
-                                </div>
-                                <p class="mt-1 mb-0">Carregando despesas pagas...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="stat-card pagas">
+                <h3>Pagas</h3>
+                <div class="value" id="totalPagas">R$ 0</div>
+            </div>
+            <div class="stat-card pendentes">
+                <h3>Pendentes</h3>
+                <div class="value" id="totalPendentes">R$ 0</div>
             </div>
         </div>
-    </div>
 
-    <!-- Botão flutuante para adicionar despesa em dispositivos móveis -->
-    <div class="fixed-bottom mb-4 d-md-none">
-        <div class="container">
-            <div class="d-flex justify-content-center">
-                <a href="/nova-despesa" class="btn btn-success rounded-circle shadow"
-                    style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: none;">
-                    <i class="bi bi-plus"></i>
-                </a>
+        <div class="month-navigation">
+            <button class="btn-nav" id="btnMesAnterior">←</button>
+            <div class="month-display" id="mesAnoDisplay">Dezembro 2024</div>
+            <button class="btn-nav" id="btnMesProximo">→</button>
+        </div>
+
+        <div class="despesas-container">
+            <div id="listaDespesas">
+                <div class="loading">Carregando</div>
             </div>
         </div>
+
+        <!-- Botão Flutuante -->
+        <a href="/nova-despesa.html" class="fab">+</a>
     </div>
 
     <script>
-        const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        let usuarioAtual = null;
+        let mesAtual = new Date().getMonth() + 1;
+        let anoAtual = new Date().getFullYear();
 
-        let mesAtual = new Date();
+        const mesesNomes = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
 
-        // Atualizar a exibição do mês
-        function atualizarTituloMes() {
-            document.getElementById('mesAtual').textContent =
-                `${meses[mesAtual.getMonth()]} ${mesAtual.getFullYear()}`;
+        async function verificarSessao() {
+            try {
+                const response = await fetch('/api/auth/verificar-sessao');
+                const data = await response.json();
+
+                if (!data.autenticado) {
+                    window.location.href = '/login.html';
+                    return false;
+                }
+
+                usuarioAtual = data.usuario;
+                document.getElementById('nomeUsuario').textContent = data.usuario.nome;
+                return true;
+            } catch (erro) {
+                window.location.href = '/login.html';
+                return false;
+            }
         }
 
-        // Navegar para o mês anterior
-        document.getElementById('btnMesAnterior').addEventListener('click', () => {
-            mesAtual.setMonth(mesAtual.getMonth() - 1);
-            atualizarTituloMes();
-            carregarDespesas();
-        });
+        function atualizarDisplay() {
+            document.getElementById('mesAnoDisplay').textContent =
+                `${mesesNomes[mesAtual - 1]} ${anoAtual}`;
+        }
 
-        // Navegar para o mês seguinte
-        document.getElementById('btnMesSeguinte').addEventListener('click', () => {
-            mesAtual.setMonth(mesAtual.getMonth() + 1);
-            atualizarTituloMes();
+        function mesAnterior() {
+            mesAtual--;
+            if (mesAtual < 1) {
+                mesAtual = 12;
+                anoAtual--;
+            }
+            atualizarDisplay();
             carregarDespesas();
-        });
+        }
 
-        atualizarTituloMes();
+        function mesProximo() {
+            mesAtual++;
+            if (mesAtual > 12) {
+                mesAtual = 1;
+                anoAtual++;
+            }
+            atualizarDisplay();
+            carregarDespesas();
+        }
 
         async function carregarDespesas() {
             try {
-                // Modificar a URL para incluir o mês e ano selecionado
-                const ano = mesAtual.getFullYear();
-                const mes = String(mesAtual.getMonth() + 1).padStart(2, '0'); // Janeiro é 0
-                const response = await fetch(`/despesas/mes?ano=${ano}&mes=${mes}`);
-                const data = await response.json();
+                const response = await fetch(`/api/despesas?mes=${mesAtual}&ano=${anoAtual}`);
+                const despesas = await response.json();
 
-                if (!data.sucesso) {
-                    throw new Error(data.mensagem);
-                }
-
-                // Calcular totais
-                const despesasPendentes = data.despesas.filter(d => !d.pago);
-                const despesasPagas = data.despesas.filter(d => d.pago);
-
-                const totalPago = despesasPagas.reduce((sum, d) => sum + parseFloat(d.valor), 0);
-                const totalPendente = despesasPendentes.reduce((sum, d) => sum + parseFloat(d.valor), 0);
-
-                // Atualizar totais no cabeçalho
-                document.getElementById('totalMes').textContent = `R$ ${data.total.toFixed(2).replace('.', ',')}`;
-                document.getElementById('totalPago').textContent = `R$ ${totalPago.toFixed(2).replace('.', ',')}`;
-                document.getElementById('totalPendente').textContent = `R$ ${totalPendente.toFixed(2).replace('.', ',')}`;
-
-                // Atualizar lista de despesas pendentes
-                const listaPendentes = document.getElementById('listaDespesasPendentes');
-                if (despesasPendentes.length === 0) {
-                    listaPendentes.innerHTML = `
-                        <div class="text-center py-3">
-                            <div class="mb-2">
-                                <i class="bi bi-journal-check text-muted" style="font-size: 2.5rem;"></i>
-                            </div>
-                            <h6 class="text-muted">Nenhuma despesa pendente este mês</h6>
-                            <small class="text-muted">Adicione uma nova despesa para começar</small>
-                        </div>`;
-                } else {
-                    const despesasHTML = despesasPendentes.map(d => `
-                        <div class="card despesa-card mb-1 animated" data-expense-id="${d.id}">
-                            <div class="card-body p-2">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex align-items-center">
-                                            <div class="me-1">
-                                                <i class="bi bi-cart text-primary" style="font-size: 0.9rem;"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="card-title mb-0" style="font-size: 0.8rem;">${d.descricao}
-                                                    ${d.total_parcelas ? `<span class="badge bg-secondary ms-1" style="font-size: 0.6rem;">${d.parcela_atual}/${d.total_parcelas}</span>` : ''}
-                                                </h6>
-                                                <div class="d-flex gap-1 mt-0">
-                                                    <small class="badge" style="background-color: ${d.categoria_cor}; color: white; font-size: 0.6rem;">
-                                                        ${d.categoria_nome}
-                                                    </small>
-                                                    <small class="badge bg-light text-dark border" style="font-size: 0.6rem;">
-                                                        ${new Date(d.data_pagamento).toLocaleDateString('pt-BR')}
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <div class="text-end me-1 valor-container">
-                                            <span class="moeda text-muted">R$</span>
-                                            <span class="valor">${parseFloat(d.valor).toFixed(2).replace('.', ',')}</span>
-                                        </div>
-                                        <div class="d-flex flex-column align-items-center">
-                                            <button class="btn-status pendente mb-1 d-flex align-items-center justify-content-center" onclick="alterarStatus(${d.id}, true)" title="Marcar como pago">
-                                                <i class="bi bi-x-lg d-flex align-items-center justify-content-center" style="font-size: 0.7rem; display: flex !important;"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger" onclick="excluirDespesa(${d.id})" title="Excluir">
-                                                <i class="bi bi-trash" style="font-size: 0.7rem;"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                    listaPendentes.innerHTML = despesasHTML;
-                }
-
-                // Atualizar lista de despesas pagas
-                const listaPagas = document.getElementById('listaDespesasPagas');
-                if (despesasPagas.length === 0) {
-                    listaPagas.innerHTML = `
-                        <div class="text-center py-3">
-                            <div class="mb-2">
-                                <i class="bi bi-check-circle text-muted" style="font-size: 2.5rem;"></i>
-                            </div>
-                            <h6 class="text-muted">Nenhuma despesa paga este mês</h6>
-                            <small class="text-muted">Suas despesas pagas aparecerão aqui</small>
-                        </div>`;
-                } else {
-                    const despesasHTML = despesasPagas.map(d => `
-                        <div class="card despesa-card bg-light mb-1 animated" data-expense-id="${d.id}">
-                            <div class="card-body p-2">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex align-items-center">
-                                            <div class="me-1">
-                                                <i class="bi bi-check-circle text-success" style="font-size: 0.9rem;"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="card-title mb-0 text-decoration-line-through" style="font-size: 0.8rem;">${d.descricao}
-                                                    ${d.total_parcelas ? `<span class="badge bg-secondary ms-1" style="font-size: 0.6rem;">${d.parcela_atual}/${d.total_parcelas}</span>` : ''}
-                                                </h6>
-                                                <div class="d-flex gap-1 mt-0">
-                                                    <small class="badge" style="background-color: ${d.categoria_cor}; color: white; font-size: 0.6rem;">
-                                                        ${d.categoria_nome}
-                                                    </small>
-                                                    <small class="badge bg-light text-dark border" style="font-size: 0.6rem;">
-                                                        ${new Date(d.data_pagamento).toLocaleDateString('pt-BR')}
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <div class="text-end me-1 valor-container">
-                                            <span class="moeda text-success">R$</span>
-                                            <span class="valor text-success">${parseFloat(d.valor).toFixed(2).replace('.', ',')}</span>
-                                        </div>
-                                        <div class="d-flex flex-column align-items-center">
-                                            <button class="btn-status pago mb-1 d-flex align-items-center justify-content-center" onclick="alterarStatus(${d.id}, false)" title="Marcar como pendente">
-                                                <i class="bi bi-check-lg d-flex align-items-center justify-content-center" style="font-size: 0.7rem; display: flex !important;"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger" onclick="excluirDespesa(${d.id})" title="Excluir">
-                                                <i class="bi bi-trash" style="font-size: 0.7rem;"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                    listaPagas.innerHTML = despesasHTML;
-                }
+                exibirDespesas(despesas);
+                calcularTotais(despesas);
             } catch (erro) {
-                document.getElementById('listaDespesasPendentes').innerHTML = `
-                    <div class="text-center py-3">
-                        <div class="mb-2">
-                            <i class="bi bi-exclamation-triangle text-danger" style="font-size: 2.5rem;"></i>
-                        </div>
-                        <h6 class="text-danger">Erro ao carregar despesas</h6>
-                        <small class="text-muted">Ocorreu um erro ao tentar carregar as despesas. Tente novamente mais tarde.</small>
-                    </div>`;
-                document.getElementById('listaDespesasPagas').innerHTML = '';
-                console.error(erro);
+                console.error('Erro ao carregar despesas:', erro);
+                document.getElementById('listaDespesas').innerHTML =
+                    '<div class="empty-state">❌ Erro ao carregar</div>';
             }
         }
 
-        async function alterarStatus(id, pago) {
+        function exibirDespesas(despesas) {
+            const container = document.getElementById('listaDespesas');
+
+            if (despesas.length === 0) {
+                container.innerHTML =
+                    '<div class="empty-state">✨ Nenhuma despesa</div>';
+                return;
+            }
+
+            container.innerHTML = despesas.map(despesa => {
+                console.log('Data vencimento:', despesa.data_vencimento); // Debug
+
+                // Tratar a data corretamente
+                let data;
+                if (despesa.data_vencimento) {
+                    // Se vier como "2024-12-13T00:00:00.000Z" ou "2024-12-13"
+                    data = new Date(despesa.data_vencimento);
+
+                    // Se a data for inválida, tentar outro formato
+                    if (isNaN(data.getTime())) {
+                        data = new Date(despesa.data_vencimento + 'T00:00:00');
+                    }
+                } else {
+                    data = new Date();
+                }
+
+                const dia = data.getDate().toString().padStart(2, '0');
+                const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+
+                // Converter valor para número
+                const valor = parseFloat(despesa.valor) || 0;
+
+                let detalhes = `<span class="categoria-badge" style="background-color: ${despesa.categoria_cor}">${despesa.categoria_nome}</span>`;
+                detalhes += ` <span>${dia}/${mes}</span>`;
+
+                if (despesa.tipo === 'fixa') {
+                    detalhes += ` • Fixa`;
+                }
+
+                if (despesa.dividida) {
+                    detalhes += ` • ÷2`;
+                }
+
+                return `
+                    <div class="despesa-item ${despesa.paga ? 'paga' : ''}">
+                        <input type="checkbox" class="checkbox-paga" 
+                               ${despesa.paga ? 'checked' : ''} 
+                               onchange="window.alterarStatusPagamento(${despesa.id}, this.checked)">
+                        <div class="despesa-info">
+                            <div class="despesa-descricao">${despesa.descricao}</div>
+                            <div class="despesa-detalhes">${detalhes}</div>
+                        </div>
+                        <div class="despesa-valor">R$ ${Math.round(valor)}</div>
+                        <button class="btn-excluir" onclick="window.excluirDespesa(${despesa.id})">×</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function calcularTotais(despesas) {
+            const total = despesas.reduce((sum, d) => sum + parseFloat(d.valor), 0);
+            const pagas = despesas.filter(d => d.paga).reduce((sum, d) => sum + parseFloat(d.valor), 0);
+            const pendentes = total - pagas;
+
+            document.getElementById('totalMes').textContent =
+                `R$ ${Math.round(total)}`;
+            document.getElementById('totalPagas').textContent =
+                `R$ ${Math.round(pagas)}`;
+            document.getElementById('totalPendentes').textContent =
+                `R$ ${Math.round(pendentes)}`;
+        }
+
+        window.alterarStatusPagamento = async function (id, paga) {
             try {
-                const response = await fetch(`/despesas/${id}/pago`, {
-                    method: 'PUT',
+                await fetch(`/api/despesas/${id}/pagar`, {
+                    method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ pago })
+                    body: JSON.stringify({ paga })
                 });
 
-                const data = await response.json();
-
-                if (data.sucesso) {
-                    // Atualizar o total
-                    carregarDespesasTotal();
-                    // Recarregar as despesas para manter a ordenação entre abas
-                    carregarDespesas();
-                } else {
-                    alert('Erro ao atualizar status');
-                }
+                carregarDespesas();
             } catch (erro) {
-                alert('Erro ao atualizar status');
-                console.error(erro);
+                console.error('Erro ao atualizar despesa:', erro);
+                alert('Erro ao atualizar despesa');
             }
-        }
+        };
 
-        // Função para atualizar apenas os totais
-        async function carregarDespesasTotal() {
-            try {
-                const ano = mesAtual.getFullYear();
-                const mes = String(mesAtual.getMonth() + 1).padStart(2, '0');
-                const response = await fetch(`/despesas/mes?ano=${ano}&mes=${mes}`);
-                const data = await response.json();
-
-                if (data.sucesso) {
-                    // Recalcular totais
-                    const despesasPendentes = data.despesas.filter(d => !d.pago);
-                    const despesasPagas = data.despesas.filter(d => d.pago);
-
-                    const totalPago = despesasPagas.reduce((sum, d) => sum + parseFloat(d.valor), 0);
-                    const totalPendente = despesasPendentes.reduce((sum, d) => sum + parseFloat(d.valor), 0);
-
-                    // Atualizar totais no cabeçalho
-                    document.getElementById('totalMes').textContent = `R$ ${data.total.toFixed(2).replace('.', ',')}`;
-                    document.getElementById('totalPago').textContent = `R$ ${totalPago.toFixed(2).replace('.', ',')}`;
-                    document.getElementById('totalPendente').textContent = `R$ ${totalPendente.toFixed(2).replace('.', ',')}`;
-                }
-            } catch (erro) {
-                console.error('Erro ao atualizar totais:', erro);
-            }
-        }
-
-        async function excluirDespesa(id) {
-            if (!confirm('Tem certeza que deseja excluir esta despesa? Esta ação não pode ser desfeita.')) {
+        window.excluirDespesa = async function (id) {
+            if (!confirm('Excluir esta despesa?')) {
                 return;
             }
 
             try {
-                const response = await fetch(`/despesas/${id}`, {
+                await fetch(`/api/despesas/${id}`, {
                     method: 'DELETE'
                 });
 
-                const data = await response.json();
-
-                if (data.sucesso) {
-                    // Recarregar a lista para atualizar as informações
-                    carregarDespesas();
-                } else {
-                    alert(data.mensagem);
-                }
+                carregarDespesas();
             } catch (erro) {
+                console.error('Erro ao excluir despesa:', erro);
                 alert('Erro ao excluir despesa');
-                console.error(erro);
             }
-        }
+        };
 
         document.getElementById('btnLogout').addEventListener('click', async () => {
             try {
-                const response = await fetch('/auth/logout', { method: 'POST' });
-                const data = await response.json();
-
-                if (data.sucesso) {
-                    window.location.href = '/login';
-                }
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/login.html';
             } catch (erro) {
                 console.error('Erro ao fazer logout:', erro);
             }
         });
 
-        carregarDespesas();
-    </script>
+        document.getElementById('btnMesAnterior').addEventListener('click', () => {
+            console.log('Mês anterior clicado');
+            mesAnterior();
+        });
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        document.getElementById('btnMesProximo').addEventListener('click', () => {
+            console.log('Próximo mês clicado');
+            mesProximo();
+        });
+
+        async function inicializar() {
+            const autenticado = await verificarSessao();
+            if (autenticado) {
+                atualizarDisplay();
+                carregarDespesas();
+            }
+        }
+
+        inicializar();
+    </script>
 </body>
 
 </html>
