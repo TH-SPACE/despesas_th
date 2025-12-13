@@ -355,32 +355,44 @@ router.delete('/:id', async (req, res) => {
         const usuarioNome = req.session.usuario.nome;
 
         // Verificar se é uma despesa fixa
-        if (id.toString().startsWith('fixa-')) {
-            const idOriginal = id.toString().substring(5); // Remover o prefixo 'fixa-'
+        if (id && typeof id === 'string' && id.startsWith('fixa-')) {
+            const idOriginal = id.substring(5); // Remover o prefixo 'fixa-'
+
+            // Validar se o ID original é um número
+            if (!/^\d+$/.test(idOriginal)) {
+                return res.status(400).json({ erro: 'ID inválido para despesa fixa' });
+            }
 
             // Obter informações da despesa fixa antes de excluir para log
             const [despesasFixas] = await db.query(
                 'SELECT descricao, valor FROM despesas_fixas WHERE id = ? AND usuario_id = ?',
-                [idOriginal, usuarioId]
+                [parseInt(idOriginal), usuarioId]
             );
 
-            // Excluir a despesa fixa
-            await db.query(
-                'DELETE FROM despesas_fixas WHERE id = ? AND usuario_id = ?',
-                [idOriginal, usuarioId]
-            );
-
+            // Excluir a despesa fixa apenas se ela existir
             if (despesasFixas.length > 0) {
+                await db.query(
+                    'DELETE FROM despesas_fixas WHERE id = ? AND usuario_id = ?',
+                    [parseInt(idOriginal), usuarioId]
+                );
+
+                // Também exclua quaisquer registros relacionados na tabela de pagamentos temporários
+                await db.query(
+                    'DELETE FROM despesas_pagas_temp WHERE despesa_fixa_id = ? AND usuario_id = ?',
+                    [parseInt(idOriginal), usuarioId]
+                );
+
                 // Log de exclusão de despesa fixa
                 console.log(`🗑️ Despesa fixa excluída por: ${usuarioNome} (ID: ${usuarioId}) - Descrição: "${despesasFixas[0].descricao}", Valor: ${despesasFixas[0].valor}`);
+
+                res.json({
+                    sucesso: true,
+                    mensagem: 'Despesa fixa excluída com sucesso'
+                });
             } else {
                 console.log(`🗑️ Tentativa de exclusão de despesa fixa inexistente por: ${usuarioNome} (ID: ${usuarioId}) - ID: ${idOriginal}`);
+                res.status(404).json({ erro: 'Despesa fixa não encontrada' });
             }
-
-            res.json({
-                sucesso: true,
-                mensagem: 'Despesa fixa excluída com sucesso'
-            });
         } else {
             // É uma despesa normal
             // Obter informações da despesa antes de excluir para log

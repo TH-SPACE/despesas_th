@@ -172,7 +172,7 @@
                             <div class="despesa-detalhes">${detalhes}</div>
                         </div>
                         <div class="despesa-valor">R$ ${Math.round(valor)}</div>
-                        <button class="btn-excluir" onclick="window.excluirDespesa(${despesa.id})">×</button>
+                        <button class="btn-excluir" onclick="window.excluirDespesa('${despesa.id}')">×</button>
                     </div>
                 `;
             }).join('');
