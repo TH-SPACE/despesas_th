@@ -208,13 +208,165 @@
             }
         };
 
-        window.excluirDespesa = async function (id) {
-            if (!confirm('Excluir esta despesa?')) {
-                return;
-            }
+        // Variáveis para controle de exclusão
+        let despesaParaExcluir = null;
 
+        // Função para mostrar o modal de confirmação
+        function mostrarModalConfirmacao(mensagem, botoes, callback) {
+            // Criar overlay escuro
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.6);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+
+            // Criar conteúdo do modal
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.style.cssText = `
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                text-align: center;
+                max-width: 90%;
+                width: 300px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            `;
+
+            // Adicionar mensagem
+            const mensagemElement = document.createElement('p');
+            mensagemElement.textContent = mensagem;
+            mensagemElement.style.cssText = `
+                margin: 0 0 20px 0;
+                font-size: 16px;
+                color: #333;
+            `;
+
+            // Criar botões
+            const botoesDiv = document.createElement('div');
+            botoesDiv.style.cssText = `
+                display: flex;
+                justify-content: space-around;
+                gap: 10px;
+            `;
+
+            // Adicionar botões dinamicamente
+            botoes.forEach(botao => {
+                const btn = document.createElement('button');
+                btn.textContent = botao.texto;
+                btn.className = botao.classe;
+                btn.style.cssText = `
+                    background: ${botao.cor};
+                    color: white;
+                    border: none;
+                    padding: 10px 15px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    flex: 1;
+                `;
+
+                btn.addEventListener('click', () => {
+                    callback(botao.valor);
+                    document.body.removeChild(overlay);
+                });
+
+                botoesDiv.appendChild(btn);
+            });
+
+            // Adicionar elementos ao modal
+            modalContent.appendChild(mensagemElement);
+            modalContent.appendChild(botoesDiv);
+            overlay.appendChild(modalContent);
+
+            // Adicionar overlay ao body
+            document.body.appendChild(overlay);
+        }
+
+        window.excluirDespesa = async function (id) {
+            // Primeiro, obter informações da despesa para verificar se é parcelada
             try {
-                await fetch(`/api/despesas/${id}`, {
+                // Para despesas fixas, não precisamos verificar parcelamento
+                if (typeof id === 'string' && id.startsWith('fixa-')) {
+                    mostrarModalConfirmacao('Excluir esta despesa fixa?', [
+                        { texto: 'Sim', classe: 'btn-confirmar', cor: '#e74c3c', valor: 'excluir' },
+                        { texto: 'Não', classe: 'btn-cancelar', cor: '#95a5a6', valor: 'cancelar' }
+                    ], (opcao) => {
+                        if (opcao === 'excluir') {
+                            excluirDoBackend(id);
+                        }
+                    });
+                    return;
+                }
+
+                // Para despesas normais, verificar se é parcelada
+                const despesas = await obterDespesas(); // Obter lista atualizada
+                const despesa = despesas.find(d => d.id == id);
+
+                if (despesa && despesa.grupo_parcelamento && despesa.total_parcelas && despesa.total_parcelas > 1) {
+                    // É uma despesa parcelada
+                    mostrarModalConfirmacao(`Excluir esta parcela?\nParcela ${despesa.parcela_atual} de ${despesa.total_parcelas}`, [
+                        { texto: 'Somente esta', classe: 'btn-confirmar', cor: '#e74c3c', valor: 'somente-esta' },
+                        { texto: 'Todas', classe: 'btn-confirmar', cor: '#f39c12', valor: 'todas' },
+                        { texto: 'Cancelar', classe: 'btn-cancelar', cor: '#95a5a6', valor: 'cancelar' }
+                    ], (opcao) => {
+                        if (opcao === 'somente-esta' || opcao === 'todas') {
+                            excluirDoBackend(id, opcao);
+                        }
+                    });
+                } else {
+                    // Não é parcelada, confirmação simples
+                    mostrarModalConfirmacao('Excluir esta despesa?', [
+                        { texto: 'Sim', classe: 'btn-confirmar', cor: '#e74c3c', valor: 'excluir' },
+                        { texto: 'Não', classe: 'btn-cancelar', cor: '#95a5a6', valor: 'cancelar' }
+                    ], (opcao) => {
+                        if (opcao === 'excluir') {
+                            excluirDoBackend(id);
+                        }
+                    });
+                }
+            } catch (erro) {
+                console.error('Erro ao verificar despesa:', erro);
+                // Caso não consigamos verificar, mostrar confirmação simples
+                mostrarModalConfirmacao('Excluir esta despesa?', [
+                    { texto: 'Sim', classe: 'btn-confirmar', cor: '#e74c3c', valor: 'excluir' },
+                    { texto: 'Não', classe: 'btn-cancelar', cor: '#95a5a6', valor: 'cancelar' }
+                ], (opcao) => {
+                    if (opcao === 'excluir') {
+                        excluirDoBackend(id);
+                    }
+                });
+            }
+        };
+
+        // Função auxiliar para obter despesas atuais
+        async function obterDespesas() {
+            try {
+                const response = await fetch(`/api/despesas?mes=${mesAtual}&ano=${anoAtual}`);
+                return await response.json();
+            } catch (erro) {
+                console.error('Erro ao obter despesas:', erro);
+                return [];
+            }
+        }
+
+        async function excluirDoBackend(id, tipoExclusao = 'excluir') {
+            try {
+                let url = `/api/despesas/${id}`;
+                if (tipoExclusao !== 'excluir') {
+                    // Adiciona parâmetro para indicar o tipo de exclusão
+                    url += `?tipoExclusao=${tipoExclusao}`;
+                }
+
+                await fetch(url, {
                     method: 'DELETE'
                 });
 
@@ -223,7 +375,7 @@
                 console.error('Erro ao excluir despesa:', erro);
                 alert('Erro ao excluir despesa');
             }
-        };
+        }
 
         document.getElementById('btnLogout').addEventListener('click', async () => {
             try {

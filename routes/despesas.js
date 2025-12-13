@@ -394,29 +394,64 @@ router.delete('/:id', async (req, res) => {
                 res.status(404).json({ erro: 'Despesa fixa não encontrada' });
             }
         } else {
-            // É uma despesa normal
-            // Obter informações da despesa antes de excluir para log
-            const [despesas] = await db.query(
-                'SELECT descricao, valor FROM despesas WHERE id = ? AND usuario_id = ?',
-                [id, usuarioId]
-            );
+            // É uma despesa normal - verificar se é parcelada para aplicar exclusão diferenciada
+            const tipoExclusao = req.query.tipoExclusao || 'excluir'; // 'excluir', 'somente-esta', 'todas'
 
-            await db.query(
-                'DELETE FROM despesas WHERE id = ? AND usuario_id = ?',
+            // Obter informações da despesa antes de excluir
+            const [despesas] = await db.query(
+                'SELECT descricao, valor, grupo_parcelamento, total_parcelas FROM despesas WHERE id = ? AND usuario_id = ?',
                 [id, usuarioId]
             );
 
             if (despesas.length > 0) {
-                // Log de exclusão de despesa normal
-                console.log(`🗑️ Despesa excluída por: ${usuarioNome} (ID: ${usuarioId}) - Descrição: "${despesas[0].descricao}", Valor: ${despesas[0].valor}`);
+                const despesa = despesas[0];
+
+                if (despesa.grupo_parcelamento && despesa.total_parcelas && despesa.total_parcelas > 1) {
+                    // É uma despesa parcelada - aplicar exclusão diferenciada
+                    if (tipoExclusao === 'todas') {
+                        // Excluir todas as parcelas do mesmo grupo
+                        await db.query(
+                            'DELETE FROM despesas WHERE grupo_parcelamento = ? AND usuario_id = ?',
+                            [despesa.grupo_parcelamento, usuarioId]
+                        );
+
+                        console.log(`🗑️ Grupo de despesas parceladas excluído por: ${usuarioNome} (ID: ${usuarioId}) - Grupo: ${despesa.grupo_parcelamento}, Descrição: "${despesa.descricao}", Total parcelas: ${despesa.total_parcelas}`);
+                        res.json({
+                            sucesso: true,
+                            mensagem: `Todas as ${despesa.total_parcelas} parcelas excluídas com sucesso`
+                        });
+                    } else {
+                        // Excluir somente esta parcela (comportamento padrão)
+                        await db.query(
+                            'DELETE FROM despesas WHERE id = ? AND usuario_id = ?',
+                            [id, usuarioId]
+                        );
+
+                        // Log de exclusão de despesa normal
+                        console.log(`🗑️ Despesa parcelada (somente esta) excluída por: ${usuarioNome} (ID: ${usuarioId}) - Descrição: "${despesa.descricao}", Parcela: ${despesa.parcela_atual}/${despesa.total_parcelas}`);
+                        res.json({
+                            sucesso: true,
+                            mensagem: 'Parcela excluída com sucesso'
+                        });
+                    }
+                } else {
+                    // Não é parcelada, exclusão normal
+                    await db.query(
+                        'DELETE FROM despesas WHERE id = ? AND usuario_id = ?',
+                        [id, usuarioId]
+                    );
+
+                    // Log de exclusão de despesa normal
+                    console.log(`🗑️ Despesa excluída por: ${usuarioNome} (ID: ${usuarioId}) - Descrição: "${despesas[0].descricao}", Valor: ${despesas[0].valor}`);
+                    res.json({
+                        sucesso: true,
+                        mensagem: 'Despesa excluída com sucesso'
+                    });
+                }
             } else {
                 console.log(`🗑️ Tentativa de exclusão de despesa inexistente por: ${usuarioNome} (ID: ${usuarioId}) - ID: ${id}`);
+                res.status(404).json({ erro: 'Despesa não encontrada' });
             }
-
-            res.json({
-                sucesso: true,
-                mensagem: 'Despesa excluída com sucesso'
-            });
         }
 
     } catch (erro) {
