@@ -38,6 +38,7 @@
         <div class="month-navigation">
             <button class="btn-nav" id="btnMesAnterior">←</button>
             <div class="month-display" id="mesAnoDisplay">Dezembro 2024</div>
+            <button class="btn-nav" id="btnMesAtual">●</button>
             <button class="btn-nav" id="btnMesProximo">→</button>
         </div>
 
@@ -105,6 +106,14 @@
             carregarDespesas();
         }
 
+        function voltarAoMesAtual() {
+            const dataAtual = new Date();
+            mesAtual = dataAtual.getMonth() + 1;
+            anoAtual = dataAtual.getFullYear();
+            atualizarDisplay();
+            carregarDespesas();
+        }
+
         async function carregarDespesas() {
             try {
                 const response = await fetch(`/api/despesas?mes=${mesAtual}&ano=${anoAtual}`);
@@ -128,54 +137,126 @@
                 return;
             }
 
-            container.innerHTML = despesas.map(despesa => {
-                console.log('Data vencimento:', despesa.data_vencimento); // Debug
+            // Separar despesas em pagas e pendentes
+            const despesasPagas = despesas.filter(d => d.paga === true || d.paga === 'true' || d.paga === 1);
+            const despesasPendentes = despesas.filter(d => d.paga !== true && d.paga !== 'true' && d.paga !== 1);
 
-                // Tratar a data corretamente
-                let data;
-                if (despesa.data_vencimento) {
-                    // Se vier como "2024-12-13T00:00:00.000Z" ou "2024-12-13"
-                    data = new Date(despesa.data_vencimento);
+            let html = '';
 
-                    // Se a data for inválida, tentar outro formato
-                    if (isNaN(data.getTime())) {
-                        data = new Date(despesa.data_vencimento + 'T00:00:00');
+            // Exibir seção de despesas pendentes se houver
+            if (despesasPendentes.length > 0) {
+                html += '<div class="despesas-section"><h3 class="section-title">💳 Pendentes</h3>';
+                html += despesasPendentes.map(despesa => {
+                    console.log('Data vencimento:', despesa.data_vencimento); // Debug
+
+                    // Tratar a data corretamente
+                    let data;
+                    if (despesa.data_vencimento) {
+                        // Se vier como "2024-12-13T00:00:00.000Z" ou "2024-12-13"
+                        data = new Date(despesa.data_vencimento);
+
+                        // Se a data for inválida, tentar outro formato
+                        if (isNaN(data.getTime())) {
+                            data = new Date(despesa.data_vencimento + 'T00:00:00');
+                        }
+                    } else {
+                        data = new Date();
                     }
-                } else {
-                    data = new Date();
-                }
 
-                const dia = data.getDate().toString().padStart(2, '0');
-                const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+                    const dia = data.getDate().toString().padStart(2, '0');
+                    const mes = (data.getMonth() + 1).toString().padStart(2, '0');
 
-                // Converter valor para número
-                const valor = parseFloat(despesa.valor) || 0;
+                    // Converter valor para número
+                    const valor = parseFloat(despesa.valor) || 0;
 
-                let detalhes = `<span class="categoria-badge" style="background-color: ${despesa.categoria_cor}">${despesa.categoria_nome}</span>`;
-                detalhes += ` <span>${dia}/${mes}</span>`;
+                    let detalhes = `<span class="categoria-badge" style="background-color: ${despesa.categoria_cor}">${despesa.categoria_nome}</span>`;
+                    detalhes += ` <span>${dia}/${mes}</span>`;
 
-                if (despesa.tipo === 'fixa') {
-                    detalhes += ` • Fixa`;
-                }
+                    if (despesa.tipo === 'fixa') {
+                        detalhes += ` • Fixa`;
+                    }
 
-                if (despesa.dividida) {
-                    detalhes += ` • ÷2`;
-                }
+                    if (despesa.dividida) {
+                        detalhes += ` • ÷2`;
+                    }
 
-                return `
-                    <div class="despesa-item ${despesa.paga ? 'paga' : ''}">
-                        <input type="checkbox" class="checkbox-paga" 
-                               ${despesa.paga ? 'checked' : ''} 
-                               onchange="window.alterarStatusPagamento(${despesa.id}, this.checked)">
-                        <div class="despesa-info">
-                            <div class="despesa-descricao">${despesa.descricao}</div>
-                            <div class="despesa-detalhes">${detalhes}</div>
+                    return `
+                        <div class="despesa-item ${despesa.paga ? 'paga' : ''}">
+                            <input type="checkbox" class="checkbox-paga"
+                                   ${despesa.paga ? 'checked' : ''}
+                                   onchange="window.alterarStatusPagamento('${despesa.id}', this.checked)">
+                            <div class="despesa-info">
+                                <div class="despesa-descricao">${despesa.descricao}</div>
+                                <div class="despesa-detalhes">${detalhes}</div>
+                            </div>
+                            <div class="despesa-valor">R$ ${Math.round(valor)}</div>
+                            <button class="btn-excluir" onclick="window.excluirDespesa('${despesa.id}')">×</button>
                         </div>
-                        <div class="despesa-valor">R$ ${Math.round(valor)}</div>
-                        <button class="btn-excluir" onclick="window.excluirDespesa('${despesa.id}')">×</button>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+                html += '</div>';
+            }
+
+            // Exibir seção de despesas pagas se houver
+            if (despesasPagas.length > 0) {
+                html += '<div class="despesas-section"><h3 class="section-title">✅ Pagas</h3>';
+                html += despesasPagas.map(despesa => {
+                    console.log('Data vencimento:', despesa.data_vencimento); // Debug
+
+                    // Tratar a data corretamente
+                    let data;
+                    if (despesa.data_vencimento) {
+                        // Se vier como "2024-12-13T00:00:00.000Z" ou "2024-12-13"
+                        data = new Date(despesa.data_vencimento);
+
+                        // Se a data for inválida, tentar outro formato
+                        if (isNaN(data.getTime())) {
+                            data = new Date(despesa.data_vencimento + 'T00:00:00');
+                        }
+                    } else {
+                        data = new Date();
+                    }
+
+                    const dia = data.getDate().toString().padStart(2, '0');
+                    const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+
+                    // Converter valor para número
+                    const valor = parseFloat(despesa.valor) || 0;
+
+                    let detalhes = `<span class="categoria-badge" style="background-color: ${despesa.categoria_cor}">${despesa.categoria_nome}</span>`;
+                    detalhes += ` <span>${dia}/${mes}</span>`;
+
+                    if (despesa.tipo === 'fixa') {
+                        detalhes += ` • Fixa`;
+                    }
+
+                    if (despesa.dividida) {
+                        detalhes += ` • ÷2`;
+                    }
+
+                    return `
+                        <div class="despesa-item ${despesa.paga ? 'paga' : ''}">
+                            <input type="checkbox" class="checkbox-paga"
+                                   ${despesa.paga ? 'checked' : ''}
+                                   onchange="window.alterarStatusPagamento('${despesa.id}', this.checked)">
+                            <div class="despesa-info">
+                                <div class="despesa-descricao">${despesa.descricao}</div>
+                                <div class="despesa-detalhes">${detalhes}</div>
+                            </div>
+                            <div class="despesa-valor">R$ ${Math.round(valor)}</div>
+                            <button class="btn-excluir" onclick="window.excluirDespesa('${despesa.id}')">×</button>
+                        </div>
+                    `;
+                }).join('');
+                html += '</div>';
+            }
+
+            // Se não houver nenhuma despesa em nenhuma das categorias
+            if (despesasPendentes.length === 0 && despesasPagas.length === 0) {
+                html = '<div class="empty-state">✨ Nenhuma despesa</div>';
+            }
+
+            container.innerHTML = html;
         }
 
         function calcularTotais(despesas) {
@@ -193,12 +274,21 @@
 
         window.alterarStatusPagamento = async function (id, paga) {
             try {
+                // Verificar se é uma despesa fixa para enviar os parâmetros corretos
+                const requestData = { paga };
+
+                if (typeof id === 'string' && id.startsWith('fixa-')) {
+                    // Para despesas fixas, precisamos enviar mês e ano
+                    requestData.mes = mesAtual;
+                    requestData.ano = anoAtual;
+                }
+
                 await fetch(`/api/despesas/${id}/pagar`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ paga })
+                    body: JSON.stringify(requestData)
                 });
 
                 carregarDespesas();
@@ -394,6 +484,11 @@
         document.getElementById('btnMesProximo').addEventListener('click', () => {
             console.log('Próximo mês clicado');
             mesProximo();
+        });
+
+        document.getElementById('btnMesAtual').addEventListener('click', () => {
+            console.log('Voltar ao mês atual clicado');
+            voltarAoMesAtual();
         });
 
         async function inicializar() {
