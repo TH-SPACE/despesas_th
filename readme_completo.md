@@ -44,6 +44,8 @@ sistema-despesas/
 ├── public/
 │   ├── css/
 │   │   └── style.css
+│   ├── js/
+│   │   └── prevenir-zoom.js
 │   ├── login.html
 │   ├── dashboard.html
 │   └── nova-despesa.html
@@ -134,6 +136,9 @@ Abra o navegador em: **http://localhost:3005**
 - **Marcar como paga:** Checkbox para alterar status
 - **Excluir:** Remover despesas indesejadas
 - **Filtro por mês:** Visualize despesas de qualquer mês do ano
+- **Navegação por mês:** Botões para avançar, retroceder e voltar ao mês atual
+- **Separação visual:** Despesas pagas e pendentes em seções distintas
+- **Botão de configurações:** Acesso à gestão de categorias
 
 ### ✅ Cadastro de Despesas
 - **Valor em reais:** Com duas casas decimais
@@ -145,6 +150,24 @@ Abra o navegador em: **http://localhost:3005**
 - **Divisão:** Divida despesas com outros usuários (valor dividido por 2)
 - **Data de vencimento:** Controle quando a despesa vence
 - **Status de pagamento:** Marque quando pagar
+- **Pré-seleção automática:** Ao marcar "Dividir despesa", o primeiro usuário disponível é selecionado automaticamente
+
+### ✅ Exclusão de Despesas
+- **Confirmação personalizada:** Modais em vez de alertas padrão do navegador
+- **Despesas parceladas:** Opção para excluir somente a parcela atual ou todas as parcelas
+- **Despesas fixas:** Exclusão funcional com confirmação adequada
+
+### ✅ Gestão de Categorias
+- **Cadastro:** Adicione novas categorias com nomes personalizados
+- **Cores:** Selecione cores para as categorias com visualização em tempo real
+- **Exclusão:** Remova categorias que não são mais utilizadas
+- **Restrição de exclusão:** Impede exclusão de categorias que estão sendo usadas em despesas
+
+### ✅ Interface Otimizada para Mobile
+- **Modais personalizados:** Substituição de alert() e confirm() por modais personalizados
+- **Layout responsivo:** Design adaptado para dispositivos móveis
+- **Botões grandes:** Interfaces táteis com áreas de toque adequadas
+- **Prevenção de zoom:** Evita zoom indesejado ao digitar em campos de formulário
 
 ## 📊 Como Usar
 
@@ -165,7 +188,7 @@ Abra o navegador em: **http://localhost:3005**
    - **Tipo:** Selecione Fixa, Variável ou Parcelada
    - **Data de Vencimento:** Quando vence
 3. **Opcionais:**
-   - Marque "Dividir com outro usuário" para compartilhar
+   - Marque "Dividir com outro usuário" para compartilhar (o primeiro usuário disponível será pré-selecionado)
    - Se for parcelada, informe o número de parcelas
 4. Clique em **"Salvar Despesa"**
 
@@ -188,12 +211,21 @@ Quando você marca "Dividir com outro usuário":
 - O valor é automaticamente dividido por 2
 - A despesa aparece para você e para o outro usuário
 - Cada um vê sua parte da despesa
+- O primeiro usuário disponível é pré-selecionado automaticamente
 
 ### Gerenciar Despesas
 
 - **Marcar como paga:** Clique no checkbox ao lado da despesa
 - **Excluir:** Clique no ícone de lixeira 🗑️
 - **Filtrar por mês:** Use o seletor de mês no topo
+- **Navegar por meses:** Use os botões de seta ou o botão de voltar ao mês atual
+- **Ver seções:** Despesas pendentes e pagas são exibidas em seções separadas
+
+### Configurações e Categorias
+
+- **Acesse configurações:** Clique no ícone de configurações (⚙️) no topo
+- **Adicione categorias:** Informe nome e cor para criar novas categorias
+- **Exclua categorias:** Remova categorias que não são mais usadas
 
 ## 🔐 Segurança
 
@@ -202,6 +234,7 @@ Quando você marca "Dividir com outro usuário":
 - ✅ Proteção de rotas (middleware de autenticação)
 - ✅ Prepared statements (proteção contra SQL Injection)
 - ✅ Validação de dados no backend
+- ✅ Proteção contra duplicidade de categorias
 
 ## 🐛 Solução de Problemas
 
@@ -243,11 +276,12 @@ PORT=3006
 
 ## 💡 Dicas de Uso
 
-1. **Crie categorias personalizadas** editando diretamente no banco de dados
-2. **Faça backup regular** do banco de dados
-3. **Mude a senha padrão** após criar os usuários
-4. **Use despesas fixas** para contas recorrentes (aluguel, internet, etc.)
-5. **Use parcelamento** para compras divididas em várias vezes
+1. **Organize suas finanças** usando categorias personalizadas que façam sentido para você
+2. **Use despesas fixas** para contas recorrentes (aluguel, internet, etc.)
+3. **Use parcelamento** para compras divididas em várias vezes
+4. **Divida despesas** com familiares ou colegas de casa para controle compartilhado
+5. **Mantenha backup regular** do banco de dados
+6. **Aproveite a pré-seleção** de usuários ao dividir despesas para ganhar tempo
 
 ## 📝 Próximas Funcionalidades (Sugestões)
 
@@ -255,9 +289,10 @@ PORT=3006
 - [ ] Gráficos de gastos por categoria
 - [ ] Exportar relatórios em PDF/Excel
 - [ ] Notificações de vencimento
-- [ ] Edição de categorias pela interface
 - [ ] Modo escuro
 - [ ] App mobile
+- [ ] Backup automático
+- [ ] Histórico de alterações
 
 ## 🤝 Contribuindo
 

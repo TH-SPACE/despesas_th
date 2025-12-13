@@ -164,12 +164,21 @@
 
         document.getElementById('dividir').addEventListener('change', (e) => {
             const compartilhadoGroup = document.getElementById('compartilhadoGroup');
+            const usuarioSelect = document.getElementById('usuario_compartilhado_id');
+
             if (e.target.checked) {
                 compartilhadoGroup.style.display = 'block';
-                document.getElementById('usuario_compartilhado_id').required = true;
+                usuarioSelect.required = true;
+
+                // Tenta selecionar automaticamente o primeiro usuário disponível
+                setTimeout(() => {
+                    if (usuarioSelect.options.length > 1) { // Mais de uma opção (excluindo o placeholder)
+                        usuarioSelect.selectedIndex = 1; // Seleciona o primeiro usuário real
+                    }
+                }, 0);
             } else {
                 compartilhadoGroup.style.display = 'none';
-                document.getElementById('usuario_compartilhado_id').required = false;
+                usuarioSelect.required = false;
             }
         });
 
