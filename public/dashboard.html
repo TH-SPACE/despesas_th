@@ -624,15 +624,46 @@
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             `;
 
-            // Título
+            // Cabeçalho do modal (título e botão de fechar)
+            const header = document.createElement('div');
+            header.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid var(--light);
+            `;
+
             const titulo = document.createElement('h3');
             titulo.textContent = '⚙️ Configurações';
             titulo.style.cssText = `
-                margin: 0 0 15px 0;
+                margin: 0;
                 color: var(--dark);
-                text-align: center;
                 font-size: 18px;
             `;
+
+            // Botão de fechar
+            const btnFechar = document.createElement('button');
+            btnFechar.innerHTML = '✕';
+            btnFechar.style.cssText = `
+                background: transparent;
+                color: var(--gray);
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                margin: 0;
+            `;
+
+            header.appendChild(titulo);
+            header.appendChild(btnFechar);
+            modalContent.appendChild(header);
 
             // Seção de cadastro de categorias
             const secaoCadastro = document.createElement('div');
@@ -686,27 +717,9 @@
                 </div>
             `;
 
-            // Botão de fechar
-            const btnFechar = document.createElement('button');
-            btnFechar.textContent = 'Fechar';
-            btnFechar.className = 'btn-secondary';
-            btnFechar.style.cssText = `
-                width: 100%;
-                padding: 12px;
-                margin-top: 15px;
-                border: none;
-                border-radius: 5px;
-                color: white;
-                font-weight: 600;
-                cursor: pointer;
-                background: var(--gray);
-            `;
-
             // Adicionar elementos ao modal
-            modalContent.appendChild(titulo);
             modalContent.appendChild(secaoCadastro);
             modalContent.appendChild(secaoLista);
-            modalContent.appendChild(btnFechar);
             overlay.appendChild(modalContent);
 
             // Adicionar overlay ao body

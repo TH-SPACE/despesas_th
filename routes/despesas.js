@@ -103,9 +103,6 @@ router.get('/', async (req, res) => {
         // Ordenar por data de vencimento
         todasDespesas.sort((a, b) => new Date(a.data_vencimento) - new Date(b.data_vencimento));
 
-        // Log de consulta
-        console.log(`📋 Consulta de despesas para: ${usuarioNome} (ID: ${usuarioId}) - Mês: ${mes || 'todos'}, Ano: ${ano || 'todos'}. Total: ${todasDespesas.length} despesas`);
-
         res.json(todasDespesas);
 
     } catch (erro) {
