@@ -13,7 +13,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>💰 Minhas Despesas</h1>
+            <div class="header-content">
+                <h1>💰 Minhas Despesas</h1>
+                <button class="btn-config" id="btnConfig" title="Configurações">⚙️</button>
+            </div>
             <div class="user-info">
                 <span class="user-name" id="nomeUsuario"></span>
                 <button class="btn-logout" id="btnLogout">Sair</button>
@@ -294,7 +297,7 @@
                 carregarDespesas();
             } catch (erro) {
                 console.error('Erro ao atualizar despesa:', erro);
-                alert('Erro ao atualizar despesa');
+                mostrarModalAlerta('Erro ao atualizar despesa', 'erro');
             }
         };
 
@@ -381,6 +384,82 @@
             document.body.appendChild(overlay);
         }
 
+        // Função para mostrar modal de alerta
+        function mostrarModalAlerta(mensagem, tipo = 'info', callback = null) {
+            // Criar overlay escuro
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.6);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+
+            // Criar conteúdo do modal
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.style.cssText = `
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                text-align: center;
+                max-width: 90%;
+                width: 300px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            `;
+
+            // Adicionar mensagem
+            const mensagemElement = document.createElement('p');
+            mensagemElement.textContent = mensagem;
+            mensagemElement.style.cssText = `
+                margin: 0 0 20px 0;
+                font-size: 16px;
+                color: #333;
+            `;
+
+            // Determinar cor do botão baseado no tipo
+            let corBotao = '#3498db'; // Padrão (info)
+            if (tipo === 'erro') {
+                corBotao = '#e74c3c';
+            } else if (tipo === 'sucesso') {
+                corBotao = '#2ecc71';
+            }
+
+            // Criar botão de confirmação
+            const btn = document.createElement('button');
+            btn.textContent = 'OK';
+            btn.className = 'btn-confirmar';
+            btn.style.cssText = `
+                background: ${corBotao};
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 5px;
+                cursor: pointer;
+                width: 100%;
+            `;
+
+            btn.addEventListener('click', () => {
+                if (callback) callback();
+                document.body.removeChild(overlay);
+            });
+
+            // Adicionar elementos ao modal
+            modalContent.appendChild(mensagemElement);
+            modalContent.appendChild(btn);
+            overlay.appendChild(modalContent);
+
+            // Adicionar overlay ao body
+            document.body.appendChild(overlay);
+        }
+
         window.excluirDespesa = async function (id) {
             // Primeiro, obter informações da despesa para verificar se é parcelada
             try {
@@ -456,14 +535,19 @@
                     url += `?tipoExclusao=${tipoExclusao}`;
                 }
 
-                await fetch(url, {
+                const response = await fetch(url, {
                     method: 'DELETE'
                 });
 
-                carregarDespesas();
+                if (response.ok) {
+                    carregarDespesas();
+                } else {
+                    const errorData = await response.json();
+                    mostrarModalAlerta(errorData.erro || 'Erro ao excluir despesa', 'erro');
+                }
             } catch (erro) {
                 console.error('Erro ao excluir despesa:', erro);
-                alert('Erro ao excluir despesa');
+                mostrarModalAlerta('Erro ao excluir despesa', 'erro');
             }
         }
 
@@ -491,12 +575,280 @@
             voltarAoMesAtual();
         });
 
+        // Evento para o botão de configurações
+        document.getElementById('btnConfig').addEventListener('click', () => {
+            console.log('Botão de configurações clicado');
+            mostrarModalConfiguracoes();
+        });
+
         async function inicializar() {
             const autenticado = await verificarSessao();
             if (autenticado) {
                 atualizarDisplay();
                 carregarDespesas();
             }
+        }
+
+        // Funções para gerenciamento de categorias
+        async function mostrarModalConfiguracoes() {
+            // Primeiro, carregar as categorias existentes
+            const categorias = await carregarCategorias();
+
+            // Criar overlay escuro
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.6);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+
+            // Criar conteúdo do modal
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-config';
+            modalContent.style.cssText = `
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                max-width: 90%;
+                width: 350px;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            `;
+
+            // Título
+            const titulo = document.createElement('h3');
+            titulo.textContent = '⚙️ Configurações';
+            titulo.style.cssText = `
+                margin: 0 0 15px 0;
+                color: var(--dark);
+                text-align: center;
+                font-size: 18px;
+            `;
+
+            // Seção de cadastro de categorias
+            const secaoCadastro = document.createElement('div');
+            secaoCadastro.innerHTML = `
+                <div style="margin-bottom: 15px;">
+                    <h4 style="color: var(--dark); margin: 0 0 10px 0; font-size: 14px;">Nova Categoria</h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <input type="text" id="novaCategoriaNome" placeholder="Nome da categoria" style="
+                            padding: 10px;
+                            border: 1px solid var(--light);
+                            border-radius: 5px;
+                            font-size: 14px;
+                        ">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label for="novaCategoriaCor" style="font-size: 12px; color: var(--dark); white-space: nowrap;">Cor:</label>
+                            <input type="color" id="novaCategoriaCor" value="#3498db" style="
+                                width: 40px;
+                                height: 40px;
+                                border: none;
+                                cursor: pointer;
+                            ">
+                            <span id="corPreview" style="
+                                display: inline-block;
+                                width: 20px;
+                                height: 20px;
+                                background-color: #3498db;
+                                border-radius: 3px;
+                                border: 1px solid var(--gray);
+                            "></span>
+                        </div>
+                        <button id="btnAdicionarCategoria" class="btn-success" style="
+                            padding: 10px;
+                            border: none;
+                            border-radius: 5px;
+                            color: white;
+                            font-weight: 600;
+                            cursor: pointer;
+                        ">Adicionar Categoria</button>
+                    </div>
+                </div>
+            `;
+
+            // Seção de lista de categorias
+            const secaoLista = document.createElement('div');
+            secaoLista.innerHTML = `
+                <div style="margin-bottom: 10px;">
+                    <h4 style="color: var(--dark); margin: 0 0 10px 0; font-size: 14px;">Categorias Cadastradas</h4>
+                    <div id="listaCategorias" style="margin-top: 10px;">
+                        ${gerarHTMLCategorias(categorias)}
+                    </div>
+                </div>
+            `;
+
+            // Botão de fechar
+            const btnFechar = document.createElement('button');
+            btnFechar.textContent = 'Fechar';
+            btnFechar.className = 'btn-secondary';
+            btnFechar.style.cssText = `
+                width: 100%;
+                padding: 12px;
+                margin-top: 15px;
+                border: none;
+                border-radius: 5px;
+                color: white;
+                font-weight: 600;
+                cursor: pointer;
+                background: var(--gray);
+            `;
+
+            // Adicionar elementos ao modal
+            modalContent.appendChild(titulo);
+            modalContent.appendChild(secaoCadastro);
+            modalContent.appendChild(secaoLista);
+            modalContent.appendChild(btnFechar);
+            overlay.appendChild(modalContent);
+
+            // Adicionar overlay ao body
+            document.body.appendChild(overlay);
+
+            // Evento para atualizar preview da cor
+            const corInput = document.getElementById('novaCategoriaCor');
+            const preview = document.getElementById('corPreview');
+            corInput.addEventListener('input', (e) => {
+                preview.style.backgroundColor = e.target.value;
+            });
+
+            // Evento para adicionar nova categoria
+            document.getElementById('btnAdicionarCategoria').addEventListener('click', async () => {
+                const nome = document.getElementById('novaCategoriaNome').value.trim();
+                const cor = document.getElementById('novaCategoriaCor').value;
+
+                if (!nome) {
+                    mostrarModalAlerta('Por favor, informe o nome da categoria', 'erro');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/despesas/categorias', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ nome, cor })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        document.getElementById('novaCategoriaNome').value = '';
+                        // Recarregar a lista de categorias
+                        const categoriasAtualizadas = await carregarCategorias();
+                        document.getElementById('listaCategorias').innerHTML = gerarHTMLCategorias(categoriasAtualizadas);
+                        mostrarModalAlerta('Categoria adicionada com sucesso!', 'sucesso');
+                    } else {
+                        mostrarModalAlerta('Erro ao adicionar categoria: ' + result.erro, 'erro');
+                    }
+                } catch (erro) {
+                    console.error('Erro ao adicionar categoria:', erro);
+                    mostrarModalAlerta('Erro ao adicionar categoria', 'erro');
+                }
+            });
+
+            // Evento para excluir categoria (usando event delegation)
+            modalContent.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('btn-excluir-categoria')) {
+                    const categoriaId = e.target.dataset.id;
+                    const categoriaNome = e.target.dataset.nome;
+
+                    mostrarModalConfirmacao(`Excluir a categoria "${categoriaNome}"?`, [
+                        { texto: 'Sim', classe: 'btn-confirmar', cor: '#e74c3c', valor: true },
+                        { texto: 'Não', classe: 'btn-cancelar', cor: '#95a5a6', valor: false }
+                    ], (confirmado) => {
+                        if (confirmado) {
+                            excluirCategoria(categoriaId);
+                        }
+                    });
+                }
+            });
+
+            // Função auxiliar para excluir categoria
+            async function excluirCategoria(id) {
+                try {
+                    const response = await fetch(`/api/despesas/categorias/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        // Recarregar a lista de categorias
+                        const categoriasAtualizadas = await carregarCategorias();
+                        document.getElementById('listaCategorias').innerHTML = gerarHTMLCategorias(categoriasAtualizadas);
+                        mostrarModalAlerta('Categoria excluída com sucesso!', 'sucesso');
+                    } else {
+                        mostrarModalAlerta('Erro ao excluir categoria: ' + result.erro, 'erro');
+                    }
+                } catch (erro) {
+                    console.error('Erro ao excluir categoria:', erro);
+                    mostrarModalAlerta('Erro ao excluir categoria', 'erro');
+                }
+            }
+
+            // Evento para fechar o modal
+            btnFechar.addEventListener('click', () => {
+                document.body.removeChild(overlay);
+            });
+        }
+
+        async function carregarCategorias() {
+            try {
+                const response = await fetch('/api/despesas/categorias');
+                return await response.json();
+            } catch (erro) {
+                console.error('Erro ao carregar categorias:', erro);
+                return [];
+            }
+        }
+
+        function gerarHTMLCategorias(categorias) {
+            if (categorias.length === 0) {
+                return '<p style="text-align: center; color: var(--gray); font-style: italic; margin: 10px 0;">Nenhuma categoria cadastrada</p>';
+            }
+
+            return categorias.map(cat => `
+                <div class="categoria-item" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px;
+                    border: 1px solid var(--light);
+                    border-radius: 5px;
+                    margin-bottom: 5px;
+                    background: #f8f9fa;
+                ">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="
+                            display: inline-block;
+                            width: 15px;
+                            height: 15px;
+                            background-color: ${cat.cor};
+                            border-radius: 3px;
+                            border: 1px solid var(--gray);
+                        "></span>
+                        <span style="font-size: 14px; color: var(--dark);">${cat.nome}</span>
+                    </div>
+                    <button class="btn-excluir-categoria" data-id="${cat.id}" data-nome="${cat.nome}" style="
+                        background: var(--danger);
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 5px 10px;
+                        cursor: pointer;
+                        font-size: 12px;
+                    ">Excluir</button>
+                </div>
+            `).join('');
         }
 
         inicializar();

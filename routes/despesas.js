@@ -471,6 +471,104 @@ router.get('/categorias', async (req, res) => {
     }
 });
 
+// Criar nova categoria
+router.post('/categorias', async (req, res) => {
+    try {
+        const { nome, cor } = req.body;
+        const usuarioId = req.session.usuario.id; // Apenas para manter consistência, mas categorias são globais
+
+        // Validação básica
+        if (!nome || nome.trim().length === 0) {
+            return res.status(400).json({ erro: 'Nome da categoria é obrigatório' });
+        }
+
+        // Garantir que a cor tenha o formato correto (padrão hexadecimal)
+        const corFormatada = cor && /^#[0-9A-F]{6}$/i.test(cor) ? cor : '#3498db'; // Cor padrão se inválida
+
+        // Inserir nova categoria
+        const [resultado] = await db.query(
+            'INSERT INTO categorias (nome, cor) VALUES (?, ?)',
+            [nome.trim(), corFormatada]
+        );
+
+        // Log de criação de categoria
+        console.log(`🏷️ Nova categoria criada: "${nome}", Cor: ${corFormatada}`);
+
+        res.json({
+            sucesso: true,
+            mensagem: 'Categoria criada com sucesso',
+            id: resultado.insertId
+        });
+
+    } catch (erro) {
+        console.error('Erro ao criar categoria:', erro);
+
+        // Verificar se é erro de duplicidade
+        if (erro.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ erro: 'Categoria com este nome já existe' });
+        }
+
+        res.status(500).json({ erro: 'Erro ao criar categoria' });
+    }
+});
+
+// Excluir categoria
+router.delete('/categorias/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const usuarioId = req.session.usuario.id; // Apenas para manter consistência, mas categorias são globais
+
+        // Verificar se a categoria existe
+        const [categorias] = await db.query(
+            'SELECT nome FROM categorias WHERE id = ?',
+            [id]
+        );
+
+        if (categorias.length === 0) {
+            return res.status(404).json({ erro: 'Categoria não encontrada' });
+        }
+
+        const categoriaNome = categorias[0].nome;
+
+        // Verificar se a categoria está sendo usada em alguma despesa
+        const [despesasComCategoria] = await db.query(
+            'SELECT COUNT(*) as count FROM despesas WHERE categoria_id = ?',
+            [id]
+        );
+
+        const [despesasFixasComCategoria] = await db.query(
+            'SELECT COUNT(*) as count FROM despesas_fixas WHERE categoria_id = ?',
+            [id]
+        );
+
+        const totalDespesas = despesasComCategoria[0].count + despesasFixasComCategoria[0].count;
+
+        if (totalDespesas > 0) {
+            return res.status(400).json({
+                erro: `Não é possível excluir a categoria "${categoriaNome}" porque ela está sendo usada em ${totalDespesas} despesa(s).`
+            });
+        }
+
+        // Excluir a categoria
+        await db.query(
+            'DELETE FROM categorias WHERE id = ?',
+            [id]
+        );
+
+        // Log de exclusão de categoria
+        console.log(`🗑️ Categoria excluída: "${categoriaNome}" (ID: ${id})`);
+
+        res.json({
+            sucesso: true,
+            mensagem: 'Categoria excluída com sucesso'
+        });
+
+    } catch (erro) {
+        console.error('Erro ao excluir categoria:', erro);
+        res.status(500).json({ erro: 'Erro ao excluir categoria' });
+    }
+});
+
 // Listar usuários (para compartilhar despesas)
 router.get('/usuarios', async (req, res) => {
     try {

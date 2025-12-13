@@ -186,6 +186,13 @@ body {
     margin-bottom: 8px;
 }
 
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
 .user-info {
     display: flex;
     justify-content: space-between;
@@ -211,6 +218,26 @@ body {
 
 .btn-logout:active {
     background: #c0392b;
+}
+
+.btn-config {
+    padding: 5px 8px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-config:active {
+    background: #2980b9;
 }
 
 /* Stats Mobile - Compacto */
