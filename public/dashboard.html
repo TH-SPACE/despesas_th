@@ -150,8 +150,6 @@
             if (despesasPendentes.length > 0) {
                 html += '<div class="despesas-section"><h3 class="section-title">💳 Pendentes</h3>';
                 html += despesasPendentes.map(despesa => {
-                    console.log('Data vencimento:', despesa.data_vencimento); // Debug
-
                     // Tratar a data corretamente
                     let data;
                     if (despesa.data_vencimento) {
@@ -204,8 +202,6 @@
             if (despesasPagas.length > 0) {
                 html += '<div class="despesas-section"><h3 class="section-title">✅ Pagas</h3>';
                 html += despesasPagas.map(despesa => {
-                    console.log('Data vencimento:', despesa.data_vencimento); // Debug
-
                     // Tratar a data corretamente
                     let data;
                     if (despesa.data_vencimento) {
@@ -561,23 +557,19 @@
         });
 
         document.getElementById('btnMesAnterior').addEventListener('click', () => {
-            console.log('Mês anterior clicado');
             mesAnterior();
         });
 
         document.getElementById('btnMesProximo').addEventListener('click', () => {
-            console.log('Próximo mês clicado');
             mesProximo();
         });
 
         document.getElementById('btnMesAtual').addEventListener('click', () => {
-            console.log('Voltar ao mês atual clicado');
             voltarAoMesAtual();
         });
 
         // Evento para o botão de configurações
         document.getElementById('btnConfig').addEventListener('click', () => {
-            console.log('Botão de configurações clicado');
             mostrarModalConfiguracoes();
         });
 
