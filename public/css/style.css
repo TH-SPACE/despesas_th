@@ -17,7 +17,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #27ae60 0%, #000000 100%); /* Verde escuro para preto */
+    background: linear-gradient(135deg, #013b19 0%, #000000 100%); /* Verde escuro para preto */
     min-height: 100vh;
     padding: 0;
     margin: 0;
@@ -50,16 +50,16 @@ body {
 
 .login-logo {
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .logo-image {
-    width: 80px;
-    height: 80px;
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid var(--light);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border: 4px solid var(--light);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
 }
 
 .login-box h1 {
@@ -629,6 +629,124 @@ html {
 body {
     -ms-touch-action: manipulation;
     touch-action: manipulation;
+}
+
+/* Animações e transições suaves */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+}
+
+/* Aplicar animações a elementos principais */
+.login-box {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.header {
+    animation: fadeIn 0.6s ease-out 0.2s both;
+}
+
+.stat-card {
+    animation: fadeIn 0.6s ease-out 0.3s both;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.despesa-item {
+    animation: fadeIn 0.4s ease-out;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.despesa-item:hover {
+    transform: translateX(5px);
+    background-color: #f8f9fa;
+}
+
+.btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s, height 0.4s;
+}
+
+.btn:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+.fab {
+    animation: float 3s ease-in-out infinite;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fab:hover {
+    transform: translateX(-50%) scale(1.1);
+}
+
+.checkbox-paga {
+    transition: all 0.2s ease;
+}
+
+.checkbox-paga:hover {
+    transform: scale(1.2);
+}
+
+.categoria-badge {
+    animation: pulse 2s infinite;
+    transition: all 0.3s ease;
+}
+
+.month-navigation {
+    animation: fadeIn 0.6s ease-out 0.1s both;
+}
+
+.btn-nav {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-nav:hover {
+    transform: scale(1.05);
+}
+
+.logo-image {
+    animation: float 4s ease-in-out infinite;
+}
+
+/* Animações para modais */
+.modal-overlay {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal-config {
+    animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* Estilos para seções de despesas */
