@@ -191,7 +191,7 @@
                                 <div class="despesa-descricao">${despesa.descricao}</div>
                                 <div class="despesa-detalhes">${detalhes}</div>
                             </div>
-                            <div class="despesa-valor">R$ ${Math.round(valor)}</div>
+                            <div class="despesa-valor">R$ ${valor.toFixed(2)}</div>
                             <button class="btn-excluir" onclick="window.excluirDespesa('${despesa.id}')">×</button>
                         </div>
                     `;
@@ -243,7 +243,7 @@
                                 <div class="despesa-descricao">${despesa.descricao}</div>
                                 <div class="despesa-detalhes">${detalhes}</div>
                             </div>
-                            <div class="despesa-valor">R$ ${Math.round(valor)}</div>
+                            <div class="despesa-valor">R$ ${valor.toFixed(2)}</div>
                             <button class="btn-excluir" onclick="window.excluirDespesa('${despesa.id}')">×</button>
                         </div>
                     `;
@@ -265,11 +265,11 @@
             const pendentes = total - pagas;
 
             document.getElementById('totalMes').textContent =
-                `R$ ${Math.round(total)}`;
+                `R$ ${total.toFixed(2)}`;
             document.getElementById('totalPagas').textContent =
-                `R$ ${Math.round(pagas)}`;
+                `R$ ${pagas.toFixed(2)}`;
             document.getElementById('totalPendentes').textContent =
-                `R$ ${Math.round(pendentes)}`;
+                `R$ ${pendentes.toFixed(2)}`;
         }
 
         window.alterarStatusPagamento = async function (id, paga) {
