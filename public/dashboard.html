@@ -68,7 +68,9 @@
 
         async function verificarSessao() {
             try {
-                const response = await fetch('/api/auth/verificar-sessao');
+                const response = await fetch('/api/auth/verificar-sessao', {
+                    credentials: 'same-origin'
+                });
                 const data = await response.json();
 
                 if (!data.autenticado) {
@@ -120,7 +122,15 @@
 
         async function carregarDespesas() {
             try {
-                const response = await fetch(`/api/despesas?mes=${mesAtual}&ano=${anoAtual}`);
+                const response = await fetch(`/api/despesas?mes=${mesAtual}&ano=${anoAtual}`, {
+                    credentials: 'same-origin'
+                });
+                
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                
                 const despesas = await response.json();
 
                 exibirDespesas(despesas);
@@ -171,7 +181,11 @@
                     // Converter valor para número
                     const valor = parseFloat(despesa.valor) || 0;
 
-                    let detalhes = `<span class="categoria-badge" style="background-color: ${despesa.categoria_cor}">${despesa.categoria_nome}</span>`;
+                    // Cor da categoria com fallback
+                    const categoriaCor = despesa.categoria_cor || '#95a5a6';
+                    const categoriaNome = despesa.categoria_nome || 'Sem categoria';
+
+                    let detalhes = `<span class="categoria-badge" style="background-color: ${categoriaCor}">${categoriaNome}</span>`;
                     detalhes += ` <span>${dia}/${mes}</span>`;
 
                     if (despesa.tipo === 'fixa') {
@@ -223,7 +237,11 @@
                     // Converter valor para número
                     const valor = parseFloat(despesa.valor) || 0;
 
-                    let detalhes = `<span class="categoria-badge" style="background-color: ${despesa.categoria_cor}">${despesa.categoria_nome}</span>`;
+                    // Cor da categoria com fallback
+                    const categoriaCor = despesa.categoria_cor || '#95a5a6';
+                    const categoriaNome = despesa.categoria_nome || 'Sem categoria';
+
+                    let detalhes = `<span class="categoria-badge" style="background-color: ${categoriaCor}">${categoriaNome}</span>`;
                     detalhes += ` <span>${dia}/${mes}</span>`;
 
                     if (despesa.tipo === 'fixa') {
@@ -283,13 +301,19 @@
                     requestData.ano = anoAtual;
                 }
 
-                await fetch(`/api/despesas/${id}/pagar`, {
+                const response = await fetch(`/api/despesas/${id}/pagar`, {
                     method: 'PATCH',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(requestData)
                 });
+
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return;
+                }
 
                 carregarDespesas();
             } catch (erro) {
@@ -516,7 +540,9 @@
         // Função auxiliar para obter despesas atuais
         async function obterDespesas() {
             try {
-                const response = await fetch(`/api/despesas?mes=${mesAtual}&ano=${anoAtual}`);
+                const response = await fetch(`/api/despesas?mes=${mesAtual}&ano=${anoAtual}`, {
+                    credentials: 'same-origin'
+                });
                 return await response.json();
             } catch (erro) {
                 console.error('Erro ao obter despesas:', erro);
@@ -533,11 +559,14 @@
                 }
 
                 const response = await fetch(url, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'same-origin'
                 });
 
                 if (response.ok) {
                     carregarDespesas();
+                } else if (response.status === 401) {
+                    window.location.href = '/login.html';
                 } else {
                     const errorData = await response.json();
                     mostrarModalAlerta(errorData.erro || 'Erro ao excluir despesa', 'erro');
@@ -550,7 +579,10 @@
 
         document.getElementById('btnLogout').addEventListener('click', async () => {
             try {
-                await fetch('/api/auth/logout', { method: 'POST' });
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
                 window.location.href = '/login.html';
             } catch (erro) {
                 console.error('Erro ao fazer logout:', erro);
@@ -658,6 +690,28 @@
             header.appendChild(btnFechar);
             modalContent.appendChild(header);
 
+            // Botão Gerenciar Usuários
+            const btnGerenciarUsuarios = document.createElement('button');
+            btnGerenciarUsuarios.textContent = '👥 Gerenciar Usuários';
+            btnGerenciarUsuarios.style.cssText = `
+                width: 100%;
+                padding: 12px;
+                margin-bottom: 15px;
+                background: var(--primary-color);
+                color: white;
+                border: none;
+                border-radius: 5px;
+                font-size: 14px;
+                cursor: pointer;
+                text-align: left;
+            `;
+            btnGerenciarUsuarios.onmouseover = () => btnGerenciarUsuarios.style.background = 'var(--primary-dark)';
+            btnGerenciarUsuarios.onmouseout = () => btnGerenciarUsuarios.style.background = 'var(--primary-color)';
+            btnGerenciarUsuarios.onclick = () => {
+                window.location.href = '/gerenciar-usuarios.html';
+            };
+            modalContent.appendChild(btnGerenciarUsuarios);
+
             // Seção de cadastro de categorias
             const secaoCadastro = document.createElement('div');
             secaoCadastro.innerHTML = `
@@ -738,6 +792,7 @@
                 try {
                     const response = await fetch('/api/despesas/categorias', {
                         method: 'POST',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json'
                         },
@@ -752,6 +807,8 @@
                         const categoriasAtualizadas = await carregarCategorias();
                         document.getElementById('listaCategorias').innerHTML = gerarHTMLCategorias(categoriasAtualizadas);
                         mostrarModalAlerta('Categoria adicionada com sucesso!', 'sucesso');
+                    } else if (response.status === 401) {
+                        window.location.href = '/login.html';
                     } else {
                         mostrarModalAlerta('Erro ao adicionar categoria: ' + result.erro, 'erro');
                     }
@@ -782,7 +839,8 @@
             async function excluirCategoria(id) {
                 try {
                     const response = await fetch(`/api/despesas/categorias/${id}`, {
-                        method: 'DELETE'
+                        method: 'DELETE',
+                        credentials: 'same-origin'
                     });
 
                     const result = await response.json();
@@ -792,6 +850,8 @@
                         const categoriasAtualizadas = await carregarCategorias();
                         document.getElementById('listaCategorias').innerHTML = gerarHTMLCategorias(categoriasAtualizadas);
                         mostrarModalAlerta('Categoria excluída com sucesso!', 'sucesso');
+                    } else if (response.status === 401) {
+                        window.location.href = '/login.html';
                     } else {
                         mostrarModalAlerta('Erro ao excluir categoria: ' + result.erro, 'erro');
                     }
@@ -805,11 +865,20 @@
             btnFechar.addEventListener('click', () => {
                 document.body.removeChild(overlay);
             });
+
+            // Fechar modal ao clicar fora
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    document.body.removeChild(overlay);
+                }
+            });
         }
 
         async function carregarCategorias() {
             try {
-                const response = await fetch('/api/despesas/categorias');
+                const response = await fetch('/api/despesas/categorias', {
+                    credentials: 'same-origin'
+                });
                 return await response.json();
             } catch (erro) {
                 console.error('Erro ao carregar categorias:', erro);

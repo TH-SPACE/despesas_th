@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Gerenciar Usuários - Sistema de Despesas</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/x-icon" href="/img/familia.jpg">
+    <style>
+        .usuarios-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .usuario-item {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 15px;
+            border-bottom: 1px solid #ecf0f1;
+            transition: background 0.3s;
+        }
+
+        .usuario-item:last-child {
+            border-bottom: none;
+        }
+
+        .usuario-item:hover {
+            background: #f8f9fa;
+        }
+
+        .usuario-info {
+            flex: 1;
+        }
+
+        .usuario-nome {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .usuario-usuario {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .usuario-data {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .usuario-atual-badge {
+            display: inline-block;
+            background: #27ae60;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+
+        .usuario-acoes {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .btn-acao {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .btn-acao:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-editar {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-editar:not(:disabled):hover {
+            background: #219653;
+        }
+
+        .btn-senha {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-senha:not(:disabled):hover {
+            background: #2980b9;
+        }
+
+        .btn-excluir {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-excluir:not(:disabled):hover {
+            background: #c0392b;
+        }
+
+        .btn-excluir:disabled {
+            background: #ccc;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.ativo {
+            display: flex;
+        }
+
+        .modal-conteudo {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-titulo {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #000;
+        }
+
+        .form-grupo {
+            margin-bottom: 15px;
+        }
+
+        .form-grupo label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .form-grupo input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ecf0f1;
+            border-radius: 6px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        .form-grupo input:focus {
+            outline: none;
+            border-color: #27ae60;
+        }
+
+        .modal-botoes {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-cancelar {
+            flex: 1;
+            padding: 12px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .btn-cancelar:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-salvar {
+            flex: 1;
+            padding: 12px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .btn-salvar:hover {
+            background: #219653;
+        }
+
+        .mensagem-erro {
+            background: #fee;
+            color: #c0392b;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .mensagem-sucesso {
+            background: #e8f5e9;
+            color: #27ae60;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-voltar {
+            background: transparent;
+            border: 2px solid #000;
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .btn-voltar:hover {
+            background: #000;
+            color: white;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* Responsivo para mobile */
+        @media (max-width: 480px) {
+            .usuario-item {
+                padding: 12px;
+            }
+
+            .usuario-nome {
+                font-size: 1em;
+            }
+
+            .usuario-acoes {
+                justify-content: flex-start;
+            }
+
+            .btn-acao {
+                flex: 1;
+                min-width: 80px;
+                font-size: 0.85em;
+                padding: 6px 10px;
+            }
+
+            .modal-conteudo {
+                padding: 20px;
+                width: 95%;
+            }
+
+            .modal-titulo {
+                font-size: 1.3em;
+            }
+
+            .header-content h1 {
+                order: 1;
+                width: 100%;
+                margin: 8px 0;
+            }
+
+            .header-content .btn-voltar {
+                order: 2;
+            }
+
+            .header-content .btn-acao[onclick="abrirModalNovoUsuario()"] {
+                order: 3;
+                width: 100%;
+                margin-left: 0 !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <button class="btn-voltar" onclick="voltarDashboard()">← Voltar</button>
+                <h1>👥 Gerenciar Usuários</h1>
+                <button class="btn-acao btn-editar" onclick="abrirModalNovoUsuario()" style="margin-left: auto;">+ Novo Usuário</button>
+            </div>
+            <div class="user-info">
+                <span class="user-name" id="nomeUsuario"></span>
+                <button class="btn-logout" id="btnLogout">Sair</button>
+            </div>
+        </div>
+
+        <div class="usuarios-container">
+            <div id="listaUsuarios">
+                <div class="loading">Carregando usuários...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Usuário -->
+    <div class="modal-overlay" id="modalEditar">
+        <div class="modal-conteudo">
+            <h2 class="modal-titulo">Editar Usuário</h2>
+            
+            <div class="mensagem-erro" id="editarErro"></div>
+            <div class="mensagem-sucesso" id="editarSucesso"></div>
+
+            <div class="form-grupo">
+                <label for="editarNome">Nome:</label>
+                <input type="text" id="editarNome" placeholder="Digite o nome">
+            </div>
+
+            <div class="form-grupo">
+                <label for="editarUsuario">Nome de usuário:</label>
+                <input type="text" id="editarUsuario" placeholder="Digite o nome de usuário">
+            </div>
+
+            <div class="modal-botoes">
+                <button class="btn-cancelar" onclick="fecharModalEditar()">Cancelar</button>
+                <button class="btn-salvar" onclick="salvarEdicao()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Alterar Senha -->
+    <div class="modal-overlay" id="modalSenha">
+        <div class="modal-conteudo">
+            <h2 class="modal-titulo">Alterar Senha</h2>
+
+            <div class="mensagem-erro" id="senhaErro"></div>
+            <div class="mensagem-sucesso" id="senhaSucesso"></div>
+
+            <div class="form-grupo">
+                <label for="novaSenha">Nova senha:</label>
+                <input type="password" id="novaSenha" placeholder="Digite a nova senha">
+            </div>
+
+            <div class="form-grupo">
+                <label for="confirmarSenha">Confirmar senha:</label>
+                <input type="password" id="confirmarSenha" placeholder="Confirme a nova senha">
+            </div>
+
+            <div class="modal-botoes">
+                <button class="btn-cancelar" onclick="fecharModalSenha()">Cancelar</button>
+                <button class="btn-salvar" onclick="salvarSenha()">Alterar Senha</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Usuário -->
+    <div class="modal-overlay" id="modalNovoUsuario">
+        <div class="modal-conteudo">
+            <h2 class="modal-titulo">Novo Usuário</h2>
+
+            <div class="mensagem-erro" id="novoUsuarioErro"></div>
+            <div class="mensagem-sucesso" id="novoUsuarioSucesso"></div>
+
+            <div class="form-grupo">
+                <label for="novoNome">Nome:</label>
+                <input type="text" id="novoNome" placeholder="Digite o nome">
+            </div>
+
+            <div class="form-grupo">
+                <label for="novoUsuario">Nome de usuário:</label>
+                <input type="text" id="novoUsuario" placeholder="Digite o nome de usuário">
+            </div>
+
+            <div class="form-grupo">
+                <label for="novaSenhaUsuario">Senha:</label>
+                <input type="password" id="novaSenhaUsuario" placeholder="Digite a senha">
+            </div>
+
+            <div class="modal-botoes">
+                <button class="btn-cancelar" onclick="fecharModalNovoUsuario()">Cancelar</button>
+                <button class="btn-salvar" onclick="salvarNovoUsuario()">Criar Usuário</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let usuarioAtual = null;
+        let usuarioSelecionadoId = null;
+
+        // Verificar sessão ao carregar
+        async function verificarSessao() {
+            try {
+                const response = await fetch('/api/auth/verificar-sessao', {
+                    credentials: 'same-origin'
+                });
+                const data = await response.json();
+
+                if (!data.autenticado) {
+                    window.location.href = '/login.html';
+                    return false;
+                }
+
+                usuarioAtual = data.usuario;
+                document.getElementById('nomeUsuario').textContent = data.usuario.nome;
+                return true;
+            } catch (erro) {
+                console.error('Erro ao verificar sessão:', erro);
+                window.location.href = '/login.html';
+                return false;
+            }
+        }
+
+        // Carregar lista de usuários
+        async function carregarUsuarios() {
+            try {
+                const response = await fetch('/api/usuarios', {
+                    credentials: 'same-origin'
+                });
+                
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                
+                const data = await response.json();
+
+                const listaUsuarios = document.getElementById('listaUsuarios');
+
+                if (data.length === 0) {
+                    listaUsuarios.innerHTML = `
+                        <div class="empty-state">
+                            <h3>Nenhum usuário encontrado</h3>
+                            <p>Não há usuários cadastrados no sistema.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                listaUsuarios.innerHTML = data.map(usuario => `
+                    <div class="usuario-item">
+                        <div class="usuario-info">
+                            <div class="usuario-nome">
+                                ${usuario.nome}
+                                ${usuario.eh_atual ? '<span class="usuario-atual-badge">Você</span>' : ''}
+                            </div>
+                            <div class="usuario-usuario">@${usuario.usuario}</div>
+                            <div class="usuario-data">
+                                Criado em: ${formatarData(usuario.created_at)}
+                                ${usuario.updated_at ? `• Atualizado em: ${formatarData(usuario.updated_at)}` : ''}
+                            </div>
+                        </div>
+                        <div class="usuario-acoes">
+                            ${!usuario.eh_atual ? `
+                                <button class="btn-acao btn-editar" onclick="abrirModalEditar(${usuario.id}, '${usuario.nome}', '${usuario.usuario}')">Editar</button>
+                                <button class="btn-acao btn-senha" onclick="abrirModalSenha(${usuario.id})">Senha</button>
+                                <button class="btn-acao btn-excluir" onclick="excluirUsuario(${usuario.id}, '${usuario.nome}')">Excluir</button>
+                            ` : `
+                                <button class="btn-acao btn-editar" disabled>Editar</button>
+                                <button class="btn-acao btn-senha" disabled>Senha</button>
+                                <button class="btn-acao btn-excluir" disabled>Excluir</button>
+                            `}
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (erro) {
+                console.error('Erro ao carregar usuários:', erro);
+                document.getElementById('listaUsuarios').innerHTML = `
+                    <div class="empty-state">
+                        <h3>Erro ao carregar</h3>
+                        <p>Não foi possível carregar a lista de usuários.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function formatarData(dataISO) {
+            if (!dataISO) return '';
+            const data = new Date(dataISO);
+            if (isNaN(data.getTime())) return '';
+            return data.toLocaleDateString('pt-BR');
+        }
+
+        function voltarDashboard() {
+            window.location.href = '/dashboard.html';
+        }
+
+        // Modal Editar
+        function abrirModalEditar(id, nome, usuario) {
+            usuarioSelecionadoId = id;
+            document.getElementById('editarNome').value = nome;
+            document.getElementById('editarUsuario').value = usuario;
+            document.getElementById('editarErro').style.display = 'none';
+            document.getElementById('editarSucesso').style.display = 'none';
+            document.getElementById('modalEditar').classList.add('ativo');
+        }
+
+        function fecharModalEditar() {
+            document.getElementById('modalEditar').classList.remove('ativo');
+            usuarioSelecionadoId = null;
+        }
+
+        // Fechar modal ao clicar fora
+        document.getElementById('modalEditar')?.addEventListener('click', (e) => {
+            if (e.target.id === 'modalEditar') {
+                fecharModalEditar();
+            }
+        });
+
+        document.getElementById('modalSenha')?.addEventListener('click', (e) => {
+            if (e.target.id === 'modalSenha') {
+                fecharModalSenha();
+            }
+        });
+
+        async function salvarEdicao() {
+            const nome = document.getElementById('editarNome').value.trim();
+            const usuario = document.getElementById('editarUsuario').value.trim();
+
+            if (!nome || !usuario) {
+                mostrarErro('editarErro', 'Nome e nome de usuário são obrigatórios');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/usuarios/${usuarioSelecionadoId}`, {
+                    method: 'PUT',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, usuario })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    mostrarSucesso('editarErro', 'editarSucesso', 'Usuário atualizado com sucesso!');
+                    setTimeout(() => {
+                        fecharModalEditar();
+                        carregarUsuarios();
+                    }, 1500);
+                } else if (response.status === 401) {
+                    window.location.href = '/login.html';
+                } else {
+                    mostrarErro('editarErro', data.erro || 'Erro ao atualizar usuário');
+                }
+            } catch (erro) {
+                mostrarErro('editarErro', 'Erro ao conectar com o servidor');
+            }
+        }
+
+        // Modal Senha
+        function abrirModalSenha(id) {
+            usuarioSelecionadoId = id;
+            document.getElementById('novaSenha').value = '';
+            document.getElementById('confirmarSenha').value = '';
+            document.getElementById('senhaErro').style.display = 'none';
+            document.getElementById('senhaSucesso').style.display = 'none';
+            document.getElementById('modalSenha').classList.add('ativo');
+        }
+
+        function fecharModalSenha() {
+            document.getElementById('modalSenha').classList.remove('ativo');
+            usuarioSelecionadoId = null;
+        }
+
+        async function salvarSenha() {
+            const novaSenha = document.getElementById('novaSenha').value;
+            const confirmarSenha = document.getElementById('confirmarSenha').value;
+
+            if (!novaSenha || !confirmarSenha) {
+                mostrarErro('senhaErro', 'Preencha todos os campos');
+                return;
+            }
+
+            if (novaSenha.length < 6) {
+                mostrarErro('senhaErro', 'A senha deve ter no mínimo 6 caracteres');
+                return;
+            }
+
+            if (novaSenha !== confirmarSenha) {
+                mostrarErro('senhaErro', 'As senhas não coincidem');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/usuarios/${usuarioSelecionadoId}/senha`, {
+                    method: 'PATCH',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ novaSenha, confirmarSenha })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    mostrarSucesso('senhaErro', 'senhaSucesso', 'Senha alterada com sucesso!');
+                    setTimeout(() => {
+                        fecharModalSenha();
+                    }, 1500);
+                } else if (response.status === 401) {
+                    window.location.href = '/login.html';
+                } else {
+                    mostrarErro('senhaErro', data.erro || 'Erro ao alterar senha');
+                }
+            } catch (erro) {
+                mostrarErro('senhaErro', 'Erro ao conectar com o servidor');
+            }
+        }
+
+        // Excluir usuário
+        async function excluirUsuario(id, nome) {
+            if (!confirm(`Tem certeza que deseja excluir o usuário "${nome}"?\n\nEsta ação não pode ser desfeita!`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/usuarios/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Usuário excluído com sucesso!');
+                    carregarUsuarios();
+                } else if (response.status === 401) {
+                    window.location.href = '/login.html';
+                } else {
+                    alert(data.erro || 'Erro ao excluir usuário');
+                }
+            } catch (erro) {
+                alert('Erro ao conectar com o servidor');
+            }
+        }
+
+        // Funções auxiliares
+        function mostrarErro(elementoErro, mensagem) {
+            const el = document.getElementById(elementoErro);
+            el.textContent = mensagem;
+            el.style.display = 'block';
+        }
+
+        function mostrarSucesso(elementoErro, elementoSucesso, mensagem) {
+            document.getElementById(elementoErro).style.display = 'none';
+            const el = document.getElementById(elementoSucesso);
+            el.textContent = mensagem;
+            el.style.display = 'block';
+        }
+
+        // Logout
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+                window.location.href = '/login.html';
+            } catch (erro) {
+                window.location.href = '/login.html';
+            }
+        });
+
+        // Fechar modal com Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                fecharModalEditar();
+                fecharModalSenha();
+                fecharModalNovoUsuario();
+            }
+        });
+
+        // Fechar modal de novo usuário ao clicar fora
+        document.getElementById('modalNovoUsuario')?.addEventListener('click', (e) => {
+            if (e.target.id === 'modalNovoUsuario') {
+                fecharModalNovoUsuario();
+            }
+        });
+
+        // Modal Novo Usuário
+        function abrirModalNovoUsuario() {
+            document.getElementById('novoNome').value = '';
+            document.getElementById('novoUsuario').value = '';
+            document.getElementById('novaSenhaUsuario').value = '';
+            document.getElementById('novoUsuarioErro').style.display = 'none';
+            document.getElementById('novoUsuarioSucesso').style.display = 'none';
+            document.getElementById('modalNovoUsuario').classList.add('ativo');
+        }
+
+        function fecharModalNovoUsuario() {
+            document.getElementById('modalNovoUsuario').classList.remove('ativo');
+        }
+
+        async function salvarNovoUsuario() {
+            const nome = document.getElementById('novoNome').value.trim();
+            const usuario = document.getElementById('novoUsuario').value.trim();
+            const senha = document.getElementById('novaSenhaUsuario').value;
+
+            if (!nome || !usuario || !senha) {
+                mostrarErro('novoUsuarioErro', 'Todos os campos são obrigatórios');
+                return;
+            }
+
+            if (senha.length < 6) {
+                mostrarErro('novoUsuarioErro', 'A senha deve ter no mínimo 6 caracteres');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/usuarios', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, usuario, senha })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    mostrarSucesso('novoUsuarioErro', 'novoUsuarioSucesso', 'Usuário criado com sucesso!');
+                    setTimeout(() => {
+                        fecharModalNovoUsuario();
+                        carregarUsuarios();
+                    }, 1500);
+                } else if (response.status === 401) {
+                    window.location.href = '/login.html';
+                } else {
+                    mostrarErro('novoUsuarioErro', data.erro || 'Erro ao criar usuário');
+                }
+            } catch (erro) {
+                mostrarErro('novoUsuarioErro', 'Erro ao conectar com o servidor');
+            }
+        }
+
+        // Inicializar
+        verificarSessao().then(() => {
+            if (usuarioAtual) {
+                carregarUsuarios();
+            }
+        });
+    </script>
+</body>
+</html>

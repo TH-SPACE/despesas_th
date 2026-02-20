@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
-const db = require('../config/database');
+const db = require('../config/db');
 
 // Rota de login
 router.post('/login', async (req, res) => {
@@ -9,31 +9,26 @@ router.post('/login', async (req, res) => {
         const { usuario, senha } = req.body;
 
         if (!usuario || !senha) {
-            return res.status(400).json({ 
-                erro: 'Usuário e senha são obrigatórios' 
+            return res.status(400).json({
+                erro: 'Usuário e senha são obrigatórios'
             });
         }
 
-        // Buscar usuário no banco
-        const [usuarios] = await db.query(
-            'SELECT * FROM usuarios WHERE usuario = ?',
-            [usuario]
-        );
+        // Buscar usuário no banco de dados JSON
+        const usuarioEncontrado = db.getUsuarioByNome(usuario);
 
-        if (usuarios.length === 0) {
-            return res.status(401).json({ 
-                erro: 'Usuário ou senha incorretos' 
+        if (!usuarioEncontrado) {
+            return res.status(401).json({
+                erro: 'Usuário ou senha incorretos'
             });
         }
-
-        const usuarioEncontrado = usuarios[0];
 
         // Verificar senha
         const senhaValida = await bcrypt.compare(senha, usuarioEncontrado.senha);
 
         if (!senhaValida) {
-            return res.status(401).json({ 
-                erro: 'Usuário ou senha incorretos' 
+            return res.status(401).json({
+                erro: 'Usuário ou senha incorretos'
             });
         }
 
@@ -55,8 +50,8 @@ router.post('/login', async (req, res) => {
 
     } catch (erro) {
         console.error('Erro no login:', erro);
-        res.status(500).json({ 
-            erro: 'Erro ao realizar login' 
+        res.status(500).json({
+            erro: 'Erro ao realizar login'
         });
     }
 });
@@ -104,26 +99,23 @@ router.post('/cadastrar', async (req, res) => {
         const { usuario, senha } = req.body;
 
         if (!usuario || !senha) {
-            return res.status(400).json({ 
-                erro: 'Usuário e senha são obrigatórios' 
+            return res.status(400).json({
+                erro: 'Usuário e senha são obrigatórios'
             });
         }
 
         if (senha.length < 6) {
-            return res.status(400).json({ 
-                erro: 'A senha deve ter no mínimo 6 caracteres' 
+            return res.status(400).json({
+                erro: 'A senha deve ter no mínimo 6 caracteres'
             });
         }
 
         // Verificar se usuário já existe
-        const [usuarios] = await db.query(
-            'SELECT id FROM usuarios WHERE usuario = ?',
-            [usuario]
-        );
+        const usuarioExistente = db.getUsuarioByNome(usuario);
 
-        if (usuarios.length > 0) {
-            return res.status(400).json({ 
-                erro: 'Este usuário já está cadastrado' 
+        if (usuarioExistente) {
+            return res.status(400).json({
+                erro: 'Este usuário já está cadastrado'
             });
         }
 
@@ -131,20 +123,21 @@ router.post('/cadastrar', async (req, res) => {
         const senhaHash = await bcrypt.hash(senha, 10);
 
         // Inserir novo usuário
-        await db.query(
-            'INSERT INTO usuarios (usuario, nome, senha) VALUES (?, ?, ?)',
-            [usuario, usuario, senhaHash]
-        );
+        const novoUsuario = db.criarUsuario({
+            usuario,
+            nome: usuario,
+            senha: senhaHash
+        });
 
-        res.json({ 
-            sucesso: true, 
-            mensagem: 'Usuário cadastrado com sucesso' 
+        res.json({
+            sucesso: true,
+            mensagem: 'Usuário cadastrado com sucesso'
         });
 
     } catch (erro) {
         console.error('Erro ao cadastrar:', erro);
-        res.status(500).json({ 
-            erro: 'Erro ao cadastrar usuário' 
+        res.status(500).json({
+            erro: 'Erro ao cadastrar usuário'
         });
     }
 });

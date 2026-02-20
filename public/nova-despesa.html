@@ -8,6 +8,35 @@
     <title>Nova Despesa - Sistema de Despesas</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" type="image/x-icon" href="/img/familia.jpg">
+    <style>
+        #categoria_id {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 12px;
+            padding-right: 36px;
+        }
+
+        .categoria-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .categoria-cor-indicador {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Ocultar botão Sair na página de nova despesa */
+        .user-info {
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -38,9 +67,12 @@
 
                 <div class="form-group">
                     <label for="categoria_id">Categoria *</label>
-                    <select id="categoria_id" name="categoria_id" required>
-                        <option value="">Selecione...</option>
-                    </select>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="categoria_id" name="categoria_id" required style="flex: 1;">
+                            <option value="">Selecione...</option>
+                        </select>
+                        <span id="categoriaCorIndicador" style="width: 24px; height: 24px; border-radius: 50%; display: inline-block; border: 2px solid #ccc; flex-shrink: 0;"></span>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -89,7 +121,9 @@
     <script>
         async function verificarSessao() {
             try {
-                const response = await fetch('/api/auth/verificar-sessao');
+                const response = await fetch('/api/auth/verificar-sessao', {
+                    credentials: 'same-origin'
+                });
                 const data = await response.json();
 
                 if (!data.autenticado) {
@@ -107,15 +141,36 @@
 
         async function carregarCategorias() {
             try {
-                const response = await fetch('/api/despesas/categorias');
+                const response = await fetch('/api/despesas/categorias', {
+                    credentials: 'same-origin'
+                });
                 const categorias = await response.json();
 
                 const select = document.getElementById('categoria_id');
+                const indicadorCor = document.getElementById('categoriaCorIndicador');
+                
+                // Armazenar cores para referência
+                window.categoriasCores = {};
+                
                 categorias.forEach(cat => {
                     const option = document.createElement('option');
                     option.value = cat.id;
                     option.textContent = cat.nome;
                     select.appendChild(option);
+                    window.categoriasCores[cat.id] = cat.cor;
+                });
+
+                // Atualizar indicador de cor ao selecionar
+                select.addEventListener('change', (e) => {
+                    const categoriaId = e.target.value;
+                    const indicador = document.getElementById('categoriaCorIndicador');
+                    if (categoriaId && window.categoriasCores[categoriaId]) {
+                        indicador.style.backgroundColor = window.categoriasCores[categoriaId];
+                        indicador.style.borderColor = window.categoriasCores[categoriaId];
+                    } else {
+                        indicador.style.backgroundColor = 'transparent';
+                        indicador.style.borderColor = '#ccc';
+                    }
                 });
             } catch (erro) {
                 console.error('Erro ao carregar categorias:', erro);
@@ -124,7 +179,9 @@
 
         async function carregarUsuarios() {
             try {
-                const response = await fetch('/api/despesas/usuarios');
+                const response = await fetch('/api/despesas/usuarios', {
+                    credentials: 'same-origin'
+                });
                 const usuarios = await response.json();
 
                 const select = document.getElementById('usuario_compartilhado_id');
@@ -191,17 +248,18 @@
             const formData = {
                 descricao: document.getElementById('descricao').value,
                 valor: document.getElementById('valor').value,
-                categoria_id: document.getElementById('categoria_id').value,
+                categoria_id: parseInt(document.getElementById('categoria_id').value),
                 tipo: document.getElementById('tipo').value,
                 data_vencimento: document.getElementById('data_vencimento').value,
                 total_parcelas: document.getElementById('total_parcelas').value || null,
                 dividir: document.getElementById('dividir').checked,
-                usuario_compartilhado_id: document.getElementById('usuario_compartilhado_id').value || null
+                usuario_compartilhado_id: document.getElementById('usuario_compartilhado_id').value ? parseInt(document.getElementById('usuario_compartilhado_id').value) : null
             };
 
             try {
                 const response = await fetch('/api/despesas', {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -215,6 +273,9 @@
                     setTimeout(() => {
                         window.location.href = '/dashboard.html';
                     }, 1500);
+                } else if (response.status === 401) {
+                    // Sessão expirou, redirecionar para login
+                    window.location.href = '/login.html';
                 } else {
                     mostrarAlerta(data.erro || 'Erro ao cadastrar');
                 }
@@ -226,7 +287,10 @@
 
         document.getElementById('btnLogout').addEventListener('click', async () => {
             try {
-                await fetch('/api/auth/logout', { method: 'POST' });
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
                 window.location.href = '/login.html';
             } catch (erro) {
                 console.error('Erro ao fazer logout:', erro);
