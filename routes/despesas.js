@@ -241,6 +241,112 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Editar despesa
+router.put('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            descricao,
+            valor,
+            categoria_id,
+            tipo,
+            data_vencimento,
+            total_parcelas,
+            dividir,
+            usuario_compartilhado_id,
+            mes,
+            ano
+        } = req.body;
+
+        const usuarioId = req.session.usuario.id;
+        const usuarioNome = req.session.usuario.nome;
+
+        // Validações básicas
+        if (!descricao && !valor && !categoria_id && !data_vencimento) {
+            return res.status(400).json({ erro: 'Nenhum campo para atualizar' });
+        }
+
+        // Verificar se é uma despesa fixa
+        if (id.toString().startsWith('fixa-')) {
+            const idOriginal = parseInt(id.toString().substring(5));
+            const despesaFixa = db.getDespesaFixaById(idOriginal);
+
+            if (!despesaFixa || despesaFixa.usuario_id !== usuarioId) {
+                return res.status(404).json({ erro: 'Despesa fixa não encontrada' });
+            }
+
+            const dadosAtualizacao = {};
+
+            if (descricao !== undefined) dadosAtualizacao.descricao = descricao;
+            if (valor !== undefined) dadosAtualizacao.valor = parseFloat(valor);
+            if (categoria_id !== undefined) dadosAtualizacao.categoria_id = parseInt(categoria_id);
+            if (data_vencimento !== undefined) {
+                const dataVencObj = new Date(data_vencimento);
+                dadosAtualizacao.dia_vencimento = dataVencObj.getDate();
+            }
+            if (dividir !== undefined) {
+                dadosAtualizacao.dividida = dividir;
+                // Atualizar usuário compartilhado se necessário
+                if (dividir && usuario_compartilhado_id) {
+                    dadosAtualizacao.usuario_compartilhado_id = usuario_compartilhado_id;
+                } else if (!dividir) {
+                    dadosAtualizacao.usuario_compartilhado_id = null;
+                }
+            }
+
+            const despesaAtualizada = db.atualizarDespesaFixa(idOriginal, dadosAtualizacao);
+
+            console.log(`📝 Despesa fixa ID: ${idOriginal} editada por: ${usuarioNome} (ID: ${usuarioId})`);
+
+            return res.json({
+                sucesso: true,
+                mensagem: 'Despesa fixa editada com sucesso',
+                despesa: despesaAtualizada
+            });
+        }
+
+        // Despesa normal (variável ou parcelada)
+        const despesa = db.getDespesaById(parseInt(id));
+
+        if (!despesa || despesa.usuario_id !== usuarioId) {
+            return res.status(404).json({ erro: 'Despesa não encontrada' });
+        }
+
+        const dadosAtualizacao = {};
+
+        if (descricao !== undefined) dadosAtualizacao.descricao = descricao;
+        if (valor !== undefined) {
+            const valorFinal = dividir ? parseFloat(valor) / 2 : parseFloat(valor);
+            dadosAtualizacao.valor = valorFinal;
+        }
+        if (categoria_id !== undefined) dadosAtualizacao.categoria_id = parseInt(categoria_id);
+        if (tipo !== undefined) dadosAtualizacao.tipo = tipo;
+        if (data_vencimento !== undefined) dadosAtualizacao.data_vencimento = data_vencimento;
+        if (dividir !== undefined) {
+            dadosAtualizacao.dividida = dividir;
+            if (dividir && usuario_compartilhado_id) {
+                dadosAtualizacao.usuario_compartilhado_id = usuario_compartilhado_id;
+            } else if (!dividir) {
+                dadosAtualizacao.usuario_compartilhado_id = null;
+            }
+        }
+
+        const despesaAtualizada = db.atualizarDespesa(parseInt(id), dadosAtualizacao);
+
+        console.log(`📝 Despesa ID: ${id} editada por: ${usuarioNome} (ID: ${usuarioId})`);
+
+        res.json({
+            sucesso: true,
+            mensagem: 'Despesa editada com sucesso',
+            despesa: despesaAtualizada
+        });
+
+    } catch (erro) {
+        console.error('Erro ao editar despesa:', erro);
+        res.status(500).json({ erro: 'Erro ao editar despesa', detalhe: erro.message });
+    }
+});
+
 // Marcar despesa como paga/não paga
 router.patch('/:id/pagar', async (req, res) => {
     try {
@@ -283,7 +389,7 @@ router.patch('/:id/pagar', async (req, res) => {
             });
         } else {
             const despesa = db.getDespesaById(parseInt(id));
-            
+
             if (!despesa || despesa.usuario_id !== usuarioId) {
                 return res.status(404).json({ erro: 'Despesa não encontrada' });
             }

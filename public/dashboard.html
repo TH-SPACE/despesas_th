@@ -206,7 +206,10 @@
                                 <div class="despesa-detalhes">${detalhes}</div>
                             </div>
                             <div class="despesa-valor">R$ ${valor.toFixed(2)}</div>
-                            <button class="btn-excluir" onclick="window.excluirDespesa('${despesa.id}')">×</button>
+                            <div class="despesa-actions">
+                                <button class="btn-editar" onclick="window.mostrarModalEditarDespesa('${despesa.id}')" title="Editar">✏️</button>
+                                <button class="btn-excluir" onclick="window.excluirDespesa('${despesa.id}')">×</button>
+                            </div>
                         </div>
                     `;
                 }).join('');
@@ -262,7 +265,10 @@
                                 <div class="despesa-detalhes">${detalhes}</div>
                             </div>
                             <div class="despesa-valor">R$ ${valor.toFixed(2)}</div>
-                            <button class="btn-excluir" onclick="window.excluirDespesa('${despesa.id}')">×</button>
+                            <div class="despesa-actions">
+                                <button class="btn-editar" onclick="window.mostrarModalEditarDespesa('${despesa.id}')" title="Editar">✏️</button>
+                                <button class="btn-excluir" onclick="window.excluirDespesa('${despesa.id}')">×</button>
+                            </div>
                         </div>
                     `;
                 }).join('');
@@ -554,7 +560,6 @@
             try {
                 let url = `/api/despesas/${id}`;
                 if (tipoExclusao !== 'excluir') {
-                    // Adiciona parâmetro para indicar o tipo de exclusão
                     url += `?tipoExclusao=${tipoExclusao}`;
                 }
 
@@ -574,6 +579,298 @@
             } catch (erro) {
                 console.error('Erro ao excluir despesa:', erro);
                 mostrarModalAlerta('Erro ao excluir despesa', 'erro');
+            }
+        }
+
+        // Função para mostrar modal de edição de despesa
+        window.mostrarModalEditarDespesa = async function(id) {
+            try {
+                // Obter todas as despesas para encontrar a que está sendo editada
+                const despesas = await obterDespesas();
+                const despesa = despesas.find(d => d.id == id || `fixa-${d.id}` == id);
+
+                if (!despesa) {
+                    mostrarModalAlerta('Despesa não encontrada', 'erro');
+                    return;
+                }
+
+                // Carregar categorias para o select
+                const categorias = await carregarCategorias();
+                const usuarios = await carregarUsuarios();
+
+                // Criar overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.6);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                `;
+
+                // Criar conteúdo do modal
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = `
+                    background: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    max-width: 90%;
+                    width: 400px;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                `;
+
+                // Cabeçalho
+                const header = document.createElement('div');
+                header.style.cssText = `
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 15px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #ecf0f1;
+                `;
+
+                const titulo = document.createElement('h3');
+                titulo.textContent = '✏️ Editar Despesa';
+                titulo.style.cssText = `margin: 0; color: #2c3e50; font-size: 18px;`;
+
+                const btnFechar = document.createElement('button');
+                btnFechar.innerHTML = '✕';
+                btnFechar.style.cssText = `
+                    background: transparent;
+                    color: #95a5a6;
+                    border: none;
+                    font-size: 20px;
+                    cursor: pointer;
+                    width: 30px;
+                    height: 30px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0;
+                `;
+
+                header.appendChild(titulo);
+                header.appendChild(btnFechar);
+                modalContent.appendChild(header);
+
+                // Formulário
+                const form = document.createElement('form');
+                form.style.cssText = `display: flex; flex-direction: column; gap: 15px;`;
+
+                // Descrição
+                form.innerHTML += `
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600; font-size: 14px;">Descrição</label>
+                        <input type="text" id="editDescricao" value="${despesa.descricao}" required style="
+                            width: 100%; padding: 10px; border: 1px solid #ecf0f1; border-radius: 5px; font-size: 14px; box-sizing: border-box;
+                        ">
+                    </div>
+                `;
+
+                // Valor
+                const valorOriginal = despesa.dividida ? parseFloat(despesa.valor) * 2 : parseFloat(despesa.valor);
+                form.innerHTML += `
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600; font-size: 14px;">Valor (R$)</label>
+                        <input type="number" id="editValor" value="${valorOriginal.toFixed(2)}" step="0.01" min="0" required style="
+                            width: 100%; padding: 10px; border: 1px solid #ecf0f1; border-radius: 5px; font-size: 14px; box-sizing: border-box;
+                        ">
+                    </div>
+                `;
+
+                // Categoria
+                const categoriasOptions = categorias.map(cat => 
+                    `<option value="${cat.id}" ${cat.id === despesa.categoria_id ? 'selected' : ''}>${cat.nome}</option>`
+                ).join('');
+                form.innerHTML += `
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600; font-size: 14px;">Categoria</label>
+                        <select id="editCategoria" style="
+                            width: 100%; padding: 10px; border: 1px solid #ecf0f1; border-radius: 5px; font-size: 14px; box-sizing: border-box;
+                        ">${categoriasOptions}</select>
+                    </div>
+                `;
+
+                // Data de vencimento
+                const dataVencimento = despesa.data_vencimento ? despesa.data_vencimento.split('T')[0] : new Date().toISOString().split('T')[0];
+                form.innerHTML += `
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600; font-size: 14px;">Data de Vencimento</label>
+                        <input type="date" id="editDataVencimento" value="${dataVencimento}" required style="
+                            width: 100%; padding: 10px; border: 1px solid #ecf0f1; border-radius: 5px; font-size: 14px; box-sizing: border-box;
+                        ">
+                    </div>
+                `;
+
+                // Checkbox Dividir
+                const usuariosOptions = usuarios.map(u => 
+                    `<option value="${u.id}" ${u.id === despesa.usuario_compartilhado_id ? 'selected' : ''}>${u.nome}</option>`
+                ).join('');
+                form.innerHTML += `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="editDividir" ${despesa.dividida ? 'checked' : ''} style="width: 18px; height: 18px;">
+                        <label for="editDividir" style="color: #2c3e50; font-size: 14px;">Dividir despesa com outro usuário</label>
+                    </div>
+                `;
+
+                // Select Usuário (aparece apenas se dividir estiver marcado)
+                form.innerHTML += `
+                    <div id="editUsuarioCompartilhadoDiv" style="display: ${despesa.usuario_compartilhado_id ? 'block' : 'none'};">
+                        <label style="display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 600; font-size: 14px;">Compartilhar com:</label>
+                        <select id="editUsuarioCompartilhado" style="
+                            width: 100%; padding: 10px; border: 1px solid #ecf0f1; border-radius: 5px; font-size: 14px; box-sizing: border-box;
+                        ">
+                            <option value="">Selecione um usuário...</option>
+                            ${usuariosOptions}
+                        </select>
+                    </div>
+                `;
+
+                // Botões
+                const botoesDiv = document.createElement('div');
+                botoesDiv.style.cssText = `
+                    display: flex;
+                    gap: 10px;
+                    margin-top: 10px;
+                `;
+
+                const btnCancelar = document.createElement('button');
+                btnCancelar.textContent = 'Cancelar';
+                btnCancelar.type = 'button';
+                btnCancelar.style.cssText = `
+                    flex: 1;
+                    padding: 12px;
+                    background: #95a5a6;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    font-size: 14px;
+                    cursor: pointer;
+                    font-weight: 600;
+                `;
+
+                const btnSalvar = document.createElement('button');
+                btnSalvar.textContent = 'Salvar Alterações';
+                btnSalvar.type = 'submit';
+                btnSalvar.style.cssText = `
+                    flex: 1;
+                    padding: 12px;
+                    background: #27ae60;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    font-size: 14px;
+                    cursor: pointer;
+                    font-weight: 600;
+                `;
+
+                botoesDiv.appendChild(btnCancelar);
+                botoesDiv.appendChild(btnSalvar);
+                form.appendChild(botoesDiv);
+                modalContent.appendChild(form);
+                overlay.appendChild(modalContent);
+                document.body.appendChild(overlay);
+
+                // Toggle do campo de usuário compartilhado
+                const checkboxDividir = document.getElementById('editDividir');
+                const usuarioCompartilhadoDiv = document.getElementById('editUsuarioCompartilhadoDiv');
+                checkboxDividir.addEventListener('change', () => {
+                    usuarioCompartilhadoDiv.style.display = checkboxDividir.checked ? 'block' : 'none';
+                });
+
+                // Fechar modal
+                btnFechar.addEventListener('click', () => {
+                    document.body.removeChild(overlay);
+                });
+
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        document.body.removeChild(overlay);
+                    }
+                });
+
+                btnCancelar.addEventListener('click', () => {
+                    document.body.removeChild(overlay);
+                });
+
+                // Submit do formulário
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+
+                    const dadosAtualizacao = {
+                        descricao: document.getElementById('editDescricao').value,
+                        valor: document.getElementById('editValor').value,
+                        categoria_id: parseInt(document.getElementById('editCategoria').value),
+                        data_vencimento: document.getElementById('editDataVencimento').value,
+                        dividir: checkboxDividir.checked
+                    };
+
+                    if (checkboxDividir.checked) {
+                        dadosAtualizacao.usuario_compartilhado_id = parseInt(document.getElementById('editUsuarioCompartilhado').value);
+                        if (!dadosAtualizacao.usuario_compartilhado_id) {
+                            mostrarModalAlerta('Selecione um usuário para compartilhar', 'erro');
+                            return;
+                        }
+                    }
+
+                    // Se for despesa fixa, enviar mês e ano também
+                    if (typeof id === 'string' && id.startsWith('fixa-')) {
+                        dadosAtualizacao.mes = mesAtual;
+                        dadosAtualizacao.ano = anoAtual;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/despesas/${id}`, {
+                            method: 'PUT',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(dadosAtualizacao)
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok) {
+                            document.body.removeChild(overlay);
+                            carregarDespesas();
+                            mostrarModalAlerta('Despesa editada com sucesso!', 'sucesso');
+                        } else if (response.status === 401) {
+                            window.location.href = '/login.html';
+                        } else {
+                            mostrarModalAlerta('Erro ao editar despesa: ' + (result.erro || result.detalhe), 'erro');
+                        }
+                    } catch (erro) {
+                        console.error('Erro ao editar despesa:', erro);
+                        mostrarModalAlerta('Erro ao editar despesa', 'erro');
+                    }
+                });
+
+            } catch (erro) {
+                console.error('Erro ao carregar dados para edição:', erro);
+                mostrarModalAlerta('Erro ao carregar dados para edição', 'erro');
+            }
+        };
+
+        // Função auxiliar para carregar usuários
+        async function carregarUsuarios() {
+            try {
+                const response = await fetch('/api/despesas/usuarios', {
+                    credentials: 'same-origin'
+                });
+                return await response.json();
+            } catch (erro) {
+                console.error('Erro ao carregar usuários:', erro);
+                return [];
             }
         }
 
